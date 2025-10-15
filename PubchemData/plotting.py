@@ -76,8 +76,8 @@ def parity_plot(
         plt.gca().text(0.05, 0.85, text2, transform=plt.gca().transAxes, fontsize=9., c='red')
     else:
         r2_text = f"$R^2 = {r2_score(x, y):0.2f}$"
-        rmse_text = f"RMSE = {np.sqrt(mean_squared_error(x, y)):0.1f}"
-        mae_text = f"MAE = {mean_absolute_error(x, y):0.1f}"
+        rmse_text = f"RMSE = {np.sqrt(mean_squared_error(x, y)):0.2f}"
+        mae_text = f"MAE = {mean_absolute_error(x, y):0.2f}"
         plt.gca().text(0.05, 0.93, r2_text, transform=plt.gca().transAxes, fontsize=9.)
         plt.gca().text(0.05, 0.87, mae_text, transform=plt.gca().transAxes, fontsize=9.)
         plt.gca().text(0.05, 0.81, rmse_text, transform=plt.gca().transAxes, fontsize=9.)
