@@ -73,7 +73,7 @@ def parse_arguments():
                         help='Random state for reproducibility')
     
     parser.add_argument('--output_dir', type=str, default=None,
-                        help='Output directory (default: data_dir/Results/virusCommandline/)')
+                        help='Output directory (default: data_dir/Results/EbolavirusCommandline/)')
     
     return parser.parse_args()
 
@@ -85,7 +85,7 @@ def load_and_prepare_data(data_dir, n_samples=None, random_state=42):
     print("-"*80)
     
     model_building_dir = os.path.join(data_dir, 'modelBuildingData/')
-    file_path = os.path.join(model_building_dir, 'allVirusData_chEMBL_wMACAW_MLready.csv')
+    file_path = os.path.join(model_building_dir, 'EbolaVirusData_chEMBL_wMACAW_MLready.csv')
     
     print(f"Loading data from: {file_path}")
     df = pd.read_csv(file_path)

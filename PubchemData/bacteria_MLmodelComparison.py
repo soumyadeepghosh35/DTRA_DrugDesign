@@ -8,6 +8,11 @@ Run from command line:
 """
 
 import os
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['NUMEXPR_NUM_THREADS'] = '1'
+
 import sys
 import argparse
 # Completely suppress stderr output
@@ -39,6 +44,8 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 from catboost import CatBoostRegressor
+from joblib import Parallel, delayed
+import multiprocessing
 
 # Add MACAW to path
 sys.path.append('../')
@@ -145,9 +152,153 @@ def get_param_grids():
     }
 
 
-def train_and_evaluate_models(smiles, Y, kf, mcw, param_grids, n_jobs=4, verbose=True):
-    """Train multiple regression models with cross-validation"""
+def process_single_fold(fold_id, train_index, test_index, smiles, Y, mcw, param_grids, n_jobs_inner):
+    """Process a single CV fold for all models"""
+    print(f"\nProcessing Fold {fold_id}")
     
+    smi_train = smiles.iloc[train_index].tolist()
+    smi_test = smiles.iloc[test_index].tolist()
+    y_train = Y[train_index]
+    y_test = Y[test_index]
+    
+    # Deep copy MACAW to avoid conflicts
+    mcw_fold = deepcopy(mcw)
+    mcw_fold.fit(smi_train, y_train)
+    
+    X_train = mcw_fold.transform(smi_train)
+    X_test = mcw_fold.transform(smi_test)
+    
+    fold_results = {}
+    
+    # SVR
+    grid_svr = GridSearchCV(
+        SVR(), param_grids['SVR'],
+        cv=3, refit=True, n_jobs=n_jobs_inner,
+        scoring='neg_mean_absolute_error', verbose=0
+    )
+    grid_svr.fit(X_train, y_train)
+    fold_results['SVR'] = {
+        'train_pred': grid_svr.predict(X_train),
+        'train_obs': y_train,
+        'test_pred': grid_svr.predict(X_test),
+        'test_obs': y_test,
+        'best_params': grid_svr.best_params_
+    }
+    
+    # Random Forest
+    grid_rf = GridSearchCV(
+        RandomForestRegressor(random_state=42, n_jobs=1),  # Set to 1!
+        param_grids['RandomForest'],
+        cv=3, refit=True, n_jobs=n_jobs_inner,
+        scoring='neg_mean_absolute_error', verbose=0
+    )
+    grid_rf.fit(X_train, y_train)
+    fold_results['RandomForest'] = {
+        'train_pred': grid_rf.predict(X_train),
+        'train_obs': y_train,
+        'test_pred': grid_rf.predict(X_test),
+        'test_obs': y_test,
+        'best_params': grid_rf.best_params_
+    }
+    
+    # XGBoost
+    grid_xgb = GridSearchCV(
+        XGBRegressor(random_state=42, tree_method='hist', verbosity=0, n_jobs=1),
+        param_grids['XGBoost'],
+        cv=3, refit=True, n_jobs=n_jobs_inner,
+        scoring='neg_mean_absolute_error', verbose=0
+    )
+    grid_xgb.fit(X_train, y_train)
+    fold_results['XGBoost'] = {
+        'train_pred': grid_xgb.predict(X_train),
+        'train_obs': y_train,
+        'test_pred': grid_xgb.predict(X_test),
+        'test_obs': y_test,
+        'best_params': grid_xgb.best_params_
+    }
+    
+    # LightGBM
+    grid_lgbm = GridSearchCV(
+        LGBMRegressor(random_state=42, verbose=-1, n_jobs=1),
+        param_grids['LightGBM'],
+        cv=3, refit=True, n_jobs=n_jobs_inner,
+        scoring='neg_mean_absolute_error', verbose=0
+    )
+    grid_lgbm.fit(X_train, y_train)
+    fold_results['LightGBM'] = {
+        'train_pred': grid_lgbm.predict(X_train),
+        'train_obs': y_train,
+        'test_pred': grid_lgbm.predict(X_test),
+        'test_obs': y_test,
+        'best_params': grid_lgbm.best_params_
+    }
+    
+    # CatBoost
+    grid_cat = GridSearchCV(
+        CatBoostRegressor(random_state=42, verbose=False, thread_count=1),
+        param_grids['CatBoost'],
+        cv=3, refit=True, n_jobs=n_jobs_inner,
+        scoring='neg_mean_absolute_error', verbose=0
+    )
+    grid_cat.fit(X_train, y_train)
+    fold_results['CatBoost'] = {
+        'train_pred': grid_cat.predict(X_train),
+        'train_obs': y_train,
+        'test_pred': grid_cat.predict(X_test),
+        'test_obs': y_test,
+        'best_params': grid_cat.best_params_
+    }
+    
+    # Neural Network
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    
+    grid_nn = GridSearchCV(
+        MLPRegressor(random_state=42, early_stopping=True),
+        param_grids['NeuralNetwork'],
+        cv=3, refit=True, n_jobs=n_jobs_inner,
+        scoring='neg_mean_absolute_error', verbose=0
+    )
+    grid_nn.fit(X_train_scaled, y_train)
+    fold_results['NeuralNetwork'] = {
+        'train_pred': grid_nn.predict(X_train_scaled),
+        'train_obs': y_train,
+        'test_pred': grid_nn.predict(X_test_scaled),
+        'test_obs': y_test,
+        'best_params': grid_nn.best_params_
+    }
+    
+    return fold_results
+
+
+def train_and_evaluate_models(smiles, Y, kf, mcw, param_grids, n_jobs=4, verbose=True):
+    """Train multiple regression models with PARALLELIZED cross-validation"""
+    
+    # Configure CPU usage
+    n_cores = multiprocessing.cpu_count()
+    num_folds = kf.get_n_splits()
+    
+    # Strategy: Parallelize outer folds
+    # n_jobs_outer * n_jobs_inner ≈ n_cores
+    n_jobs_outer = min(num_folds, max(1, n_cores // 4))  # Run multiple folds in parallel
+    n_jobs_inner = max(1, n_cores // n_jobs_outer)  # Cores per fold for GridSearchCV
+    
+    print(f"Parallelization strategy:")
+    print(f"  Total cores: {n_cores}")
+    print(f"  Parallel folds: {n_jobs_outer}")
+    print(f"  Cores per fold (GridSearchCV): {n_jobs_inner}")
+    print(f"  Estimated speedup: {n_jobs_outer}x")
+    
+    # Run folds in parallel
+    fold_results_list = Parallel(n_jobs=n_jobs_outer, verbose=10)(
+        delayed(process_single_fold)(
+            fold_id, train_idx, test_idx, smiles, Y, mcw, param_grids, n_jobs_inner
+        )
+        for fold_id, (train_idx, test_idx) in enumerate(kf.split(smiles), 1)
+    )
+    
+    # Aggregate results across folds
     model_names = ['SVR', 'RandomForest', 'XGBoost', 'LightGBM', 'CatBoost', 'NeuralNetwork']
     results = {}
     for name in model_names:
@@ -157,125 +308,13 @@ def train_and_evaluate_models(smiles, Y, kf, mcw, param_grids, n_jobs=4, verbose
             'best_params': []
         }
     
-    num_folds = kf.get_n_splits()
-    
-    for fold_id, (train_index, test_index) in enumerate(kf.split(smiles), 1):
-        if verbose:
-            print(f"\nFold {fold_id}/{num_folds}")
-            print("-" * 60)
-        
-        smi_train = smiles.iloc[train_index].tolist()
-        smi_test = smiles.iloc[test_index].tolist()
-        y_train = Y[train_index]
-        y_test = Y[test_index]
-        
-        mcw_fold = deepcopy(mcw)
-        mcw_fold.fit(smi_train, y_train)
-        
-        X_train = mcw_fold.transform(smi_train)
-        X_test = mcw_fold.transform(smi_test)
-        
-        if verbose:
-            print(f"Training samples: {X_train.shape[0]}, Test samples: {X_test.shape[0]}")
-        
-        # SVR
-        if verbose:
-            print("Training SVR...")
-        grid_svr = GridSearchCV(
-            SVR(), param_grids['SVR'],
-            cv=3, refit=True, n_jobs=n_jobs,
-            scoring='neg_mean_absolute_error', verbose=0
-        )
-        grid_svr.fit(X_train, y_train)
-        results['SVR']['train_pred'].extend(grid_svr.predict(X_train))
-        results['SVR']['train_obs'].extend(y_train)
-        results['SVR']['test_pred'].extend(grid_svr.predict(X_test))
-        results['SVR']['test_obs'].extend(y_test)
-        results['SVR']['best_params'].append(grid_svr.best_params_)
-        
-        # Random Forest
-        if verbose:
-            print("Training Random Forest...")
-        grid_rf = GridSearchCV(
-            RandomForestRegressor(random_state=42, n_jobs=n_jobs),
-            param_grids['RandomForest'],
-            cv=3, refit=True, n_jobs=n_jobs,
-            scoring='neg_mean_absolute_error', verbose=0
-        )
-        grid_rf.fit(X_train, y_train)
-        results['RandomForest']['train_pred'].extend(grid_rf.predict(X_train))
-        results['RandomForest']['train_obs'].extend(y_train)
-        results['RandomForest']['test_pred'].extend(grid_rf.predict(X_test))
-        results['RandomForest']['test_obs'].extend(y_test)
-        results['RandomForest']['best_params'].append(grid_rf.best_params_)
-        
-        # XGBoost
-        if verbose:
-            print("Training XGBoost...")
-        grid_xgb = GridSearchCV(
-            XGBRegressor(random_state=42, tree_method='hist', verbosity=0),
-            param_grids['XGBoost'],
-            cv=3, refit=True, n_jobs=n_jobs,
-            scoring='neg_mean_absolute_error', verbose=0
-        )
-        grid_xgb.fit(X_train, y_train)
-        results['XGBoost']['train_pred'].extend(grid_xgb.predict(X_train))
-        results['XGBoost']['train_obs'].extend(y_train)
-        results['XGBoost']['test_pred'].extend(grid_xgb.predict(X_test))
-        results['XGBoost']['test_obs'].extend(y_test)
-        results['XGBoost']['best_params'].append(grid_xgb.best_params_)
-        
-        # LightGBM
-        if verbose:
-            print("Training LightGBM...")
-        grid_lgbm = GridSearchCV(
-            LGBMRegressor(random_state=42, verbose=-1),
-            param_grids['LightGBM'],
-            cv=3, refit=True, n_jobs=n_jobs,
-            scoring='neg_mean_absolute_error', verbose=0
-        )
-        grid_lgbm.fit(X_train, y_train)
-        results['LightGBM']['train_pred'].extend(grid_lgbm.predict(X_train))
-        results['LightGBM']['train_obs'].extend(y_train)
-        results['LightGBM']['test_pred'].extend(grid_lgbm.predict(X_test))
-        results['LightGBM']['test_obs'].extend(y_test)
-        results['LightGBM']['best_params'].append(grid_lgbm.best_params_)
-        
-        # CatBoost
-        if verbose:
-            print("Training CatBoost...")
-        grid_cat = GridSearchCV(
-            CatBoostRegressor(random_state=42, verbose=False),
-            param_grids['CatBoost'],
-            cv=3, refit=True, n_jobs=n_jobs,
-            scoring='neg_mean_absolute_error', verbose=0
-        )
-        grid_cat.fit(X_train, y_train)
-        results['CatBoost']['train_pred'].extend(grid_cat.predict(X_train))
-        results['CatBoost']['train_obs'].extend(y_train)
-        results['CatBoost']['test_pred'].extend(grid_cat.predict(X_test))
-        results['CatBoost']['test_obs'].extend(y_test)
-        results['CatBoost']['best_params'].append(grid_cat.best_params_)
-        
-        # Neural Network
-        if verbose:
-            print("Training Neural Network...")
-        scaler = StandardScaler()
-        X_train_scaled = scaler.fit_transform(X_train)
-        X_test_scaled = scaler.transform(X_test)
-        
-        grid_nn = GridSearchCV(
-            MLPRegressor(random_state=42, early_stopping=True),
-            param_grids['NeuralNetwork'],
-            cv=3, refit=True, n_jobs=n_jobs,
-            scoring='neg_mean_absolute_error', verbose=0
-        )
-        grid_nn.fit(X_train_scaled, y_train)
-        results['NeuralNetwork']['train_pred'].extend(grid_nn.predict(X_train_scaled))
-        results['NeuralNetwork']['train_obs'].extend(y_train)
-        results['NeuralNetwork']['test_pred'].extend(grid_nn.predict(X_test_scaled))
-        results['NeuralNetwork']['test_obs'].extend(y_test)
-        results['NeuralNetwork']['best_params'].append(grid_nn.best_params_)
+    for fold_result in fold_results_list:
+        for model_name in model_names:
+            results[model_name]['train_pred'].extend(fold_result[model_name]['train_pred'])
+            results[model_name]['train_obs'].extend(fold_result[model_name]['train_obs'])
+            results[model_name]['test_pred'].extend(fold_result[model_name]['test_pred'])
+            results[model_name]['test_obs'].extend(fold_result[model_name]['test_obs'])
+            results[model_name]['best_params'].append(fold_result[model_name]['best_params'])
     
     # Convert to numpy arrays
     for model_name in results:

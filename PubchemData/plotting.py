@@ -70,10 +70,32 @@ def parity_plot(
 
     if x_test is not None:
         plt.errorbar(x=x_test, y=y_test, yerr=y_test_std, color='red', fmt='.', elinewidth=.5, alpha=0.5)
-        text1 = f"$R^2_{{train}} = {r2_score(x,y):0.2f}$"
-        text2 = f"$R^2_{{test}} = {r2_score(x_test,y_test):0.2f}$"
-        plt.gca().text(0.05, 0.93, text1, transform=plt.gca().transAxes, fontsize=9., c='blue')
-        plt.gca().text(0.05, 0.85, text2, transform=plt.gca().transAxes, fontsize=9., c='red')
+        
+        # Calculate train metrics
+        train_r2 = r2_score(x, y)
+        train_mae = mean_absolute_error(x, y)
+        train_rmse = np.sqrt(mean_squared_error(x, y))
+        
+        # Calculate test metrics
+        test_r2 = r2_score(x_test, y_test)
+        test_mae = mean_absolute_error(x_test, y_test)
+        test_rmse = np.sqrt(mean_squared_error(x_test, y_test))
+        
+        # Train metrics (top-left, blue)
+        ax.text(0.02, 0.98, 
+                f'$R^2_{{\\mathrm{{Train}}}} = {train_r2:.2f}$\n'
+                f'$\\mathrm{{MAE}}_{{\\mathrm{{Train}}}} = {train_mae:.2f}$\n'
+                f'$\\mathrm{{RMSE}}_{{\\mathrm{{Train}}}} = {train_rmse:.2f}$',
+                transform=ax.transAxes, fontsize=9, va='top', ha='left',
+                color='blue')
+        
+        # Test metrics (bottom-right, red)
+        ax.text(0.98, 0.02, 
+                f'$R^2_{{\\mathrm{{Test}}}} = {test_r2:.2f}$\n'
+                f'$\\mathrm{{MAE}}_{{\\mathrm{{Test}}}} = {test_mae:.2f}$\n'
+                f'$\\mathrm{{RMSE}}_{{\\mathrm{{Test}}}} = {test_rmse:.2f}$',
+                transform=ax.transAxes, fontsize=9, va='bottom', ha='right',
+                color='red')
     else:
         r2_text = f"$R^2 = {r2_score(x, y):0.2f}$"
         rmse_text = f"RMSE = {np.sqrt(mean_squared_error(x, y)):0.2f}"

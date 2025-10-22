@@ -3,11 +3,10 @@
 """
 Multi-Model Comparison for Antiviral Drug Discovery
 Run from command line: 
-* (full) python virus_MLmodelComparison.py --n_folds 10 --n_jobs 4 --random_state 42
-* (test) python virus_MLmodelComparison.py --n_samples 500 --n_folds 5 --n_jobs 4 --random_state 42
+* (full) python bacteria_MLmodelComparison.py --n_folds 10 --n_jobs 4 --random_state 42
+* (test) python bacteria_MLmodelComparison.py --n_samples 500 --n_folds 5 --n_jobs 4 --random_state 42
 """
 
-import os
 import os
 os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['MKL_NUM_THREADS'] = '1'
@@ -46,6 +45,7 @@ from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 from catboost import CatBoostRegressor
 from joblib import Parallel, delayed
+import multiprocessing
 
 # Add MACAW to path
 sys.path.append('../')
@@ -73,7 +73,7 @@ def parse_arguments():
                         help='Random state for reproducibility')
     
     parser.add_argument('--output_dir', type=str, default=None,
-                        help='Output directory (default: data_dir/Results/virusCommandline/)')
+                        help='Output directory (default: data_dir/Results/StaphylococcusBacteriaCommandline/)')
     
     return parser.parse_args()
 
@@ -85,13 +85,13 @@ def load_and_prepare_data(data_dir, n_samples=None, random_state=42):
     print("-"*80)
     
     model_building_dir = os.path.join(data_dir, 'modelBuildingData/')
-    file_path = os.path.join(model_building_dir, 'allVirusData_chEMBL_wMACAW_MLready.csv')
+    file_path = os.path.join(model_building_dir, 'StaphylococcusBacteriaData_chEMBL_wMACAW_MLready.csv')
     
     print(f"Loading data from: {file_path}")
     df = pd.read_csv(file_path)
     
     # Filter columns
-    df = df.filter(items=["Smiles", "VirusClassifier", "pPotency"])
+    df = df.filter(items=["Smiles", "bacteriaClassifier", "pPotency"])
     
     # Extract data
     smiles = df['Smiles'].astype(str).reset_index(drop=True)
@@ -152,35 +152,25 @@ def get_param_grids():
     }
 
 
-
-
-def process_single_fold(fold_id, train_index, test_index, smiles, Y, mcw, 
-                        param_grids, n_jobs_inner, num_folds, verbose=True):
-    """Process a single fold for all models"""
-    if verbose:
-        print(f"\nFold {fold_id}/{num_folds}")
-        print("-" * 60)
+def process_single_fold(fold_id, train_index, test_index, smiles, Y, mcw, param_grids, n_jobs_inner):
+    """Process a single CV fold for all models"""
+    print(f"\nProcessing Fold {fold_id}")
     
     smi_train = smiles.iloc[train_index].tolist()
     smi_test = smiles.iloc[test_index].tolist()
     y_train = Y[train_index]
     y_test = Y[test_index]
     
-    # Clone MACAW to avoid conflicts
+    # Deep copy MACAW to avoid conflicts
     mcw_fold = deepcopy(mcw)
     mcw_fold.fit(smi_train, y_train)
     
     X_train = mcw_fold.transform(smi_train)
     X_test = mcw_fold.transform(smi_test)
     
-    if verbose:
-        print(f"Training samples: {X_train.shape[0]}, Test samples: {X_test.shape[0]}")
-    
     fold_results = {}
     
     # SVR
-    if verbose:
-        print("Training SVR...")
     grid_svr = GridSearchCV(
         SVR(), param_grids['SVR'],
         cv=3, refit=True, n_jobs=n_jobs_inner,
@@ -196,10 +186,8 @@ def process_single_fold(fold_id, train_index, test_index, smiles, Y, mcw,
     }
     
     # Random Forest
-    if verbose:
-        print("Training Random Forest...")
     grid_rf = GridSearchCV(
-        RandomForestRegressor(random_state=42, n_jobs=1),  # n_jobs=1 to avoid nested parallelism
+        RandomForestRegressor(random_state=42, n_jobs=1),  # Set to 1!
         param_grids['RandomForest'],
         cv=3, refit=True, n_jobs=n_jobs_inner,
         scoring='neg_mean_absolute_error', verbose=0
@@ -214,8 +202,6 @@ def process_single_fold(fold_id, train_index, test_index, smiles, Y, mcw,
     }
     
     # XGBoost
-    if verbose:
-        print("Training XGBoost...")
     grid_xgb = GridSearchCV(
         XGBRegressor(random_state=42, tree_method='hist', verbosity=0, n_jobs=1),
         param_grids['XGBoost'],
@@ -232,8 +218,6 @@ def process_single_fold(fold_id, train_index, test_index, smiles, Y, mcw,
     }
     
     # LightGBM
-    if verbose:
-        print("Training LightGBM...")
     grid_lgbm = GridSearchCV(
         LGBMRegressor(random_state=42, verbose=-1, n_jobs=1),
         param_grids['LightGBM'],
@@ -250,8 +234,6 @@ def process_single_fold(fold_id, train_index, test_index, smiles, Y, mcw,
     }
     
     # CatBoost
-    if verbose:
-        print("Training CatBoost...")
     grid_cat = GridSearchCV(
         CatBoostRegressor(random_state=42, verbose=False, thread_count=1),
         param_grids['CatBoost'],
@@ -268,8 +250,6 @@ def process_single_fold(fold_id, train_index, test_index, smiles, Y, mcw,
     }
     
     # Neural Network
-    if verbose:
-        print("Training Neural Network...")
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
@@ -293,35 +273,32 @@ def process_single_fold(fold_id, train_index, test_index, smiles, Y, mcw,
 
 
 def train_and_evaluate_models(smiles, Y, kf, mcw, param_grids, n_jobs=4, verbose=True):
-    """Train multiple regression models with parallelized cross-validation"""
+    """Train multiple regression models with PARALLELIZED cross-validation"""
     
+    # Configure CPU usage
+    n_cores = multiprocessing.cpu_count()
     num_folds = kf.get_n_splits()
     
-    # Configure parallelization
-    total_cores = n_jobs
-    n_jobs_outer = min(num_folds, max(1, total_cores // 4))  # Parallel folds
-    n_jobs_inner = max(1, total_cores // n_jobs_outer)  # Cores per fold
+    # Strategy: Parallelize outer folds
+    # n_jobs_outer * n_jobs_inner ≈ n_cores
+    n_jobs_outer = min(num_folds, max(1, n_cores // 4))  # Run multiple folds in parallel
+    n_jobs_inner = max(1, n_cores // n_jobs_outer)  # Cores per fold for GridSearchCV
     
-    print(f"\nParallelization: {n_jobs_outer} parallel folds, {n_jobs_inner} cores each")
+    print(f"Parallelization strategy:")
+    print(f"  Total cores: {n_cores}")
+    print(f"  Parallel folds: {n_jobs_outer}")
+    print(f"  Cores per fold (GridSearchCV): {n_jobs_inner}")
+    print(f"  Estimated speedup: {n_jobs_outer}x")
     
-    # Process folds in parallel
+    # Run folds in parallel
     fold_results_list = Parallel(n_jobs=n_jobs_outer, verbose=10)(
         delayed(process_single_fold)(
-            fold_id=fold_id,
-            train_index=train_idx,
-            test_index=test_idx,
-            smiles=smiles,
-            Y=Y,
-            mcw=mcw,
-            param_grids=param_grids,
-            n_jobs_inner=n_jobs_inner,
-            num_folds=num_folds,
-            verbose=False  # Reduce verbosity in parallel
+            fold_id, train_idx, test_idx, smiles, Y, mcw, param_grids, n_jobs_inner
         )
         for fold_id, (train_idx, test_idx) in enumerate(kf.split(smiles), 1)
     )
     
-    # Combine results from all folds
+    # Aggregate results across folds
     model_names = ['SVR', 'RandomForest', 'XGBoost', 'LightGBM', 'CatBoost', 'NeuralNetwork']
     results = {}
     for name in model_names:
@@ -505,8 +482,8 @@ def create_parity_plots(results, save_dir):
                 bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
         
         plt.tight_layout()
-        plt.savefig(os.path.join(save_dir, f'parity_plot_virus_{model_name}.png'), dpi=300, bbox_inches='tight')
-        plt.savefig(os.path.join(save_dir, f'parity_plot_virus_{model_name}.svg'), bbox_inches='tight')
+        plt.savefig(os.path.join(save_dir, f'parity_plot_bacteria_{model_name}.png'), dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(save_dir, f'parity_plot_bacteria_{model_name}.svg'), bbox_inches='tight')
         plt.close()
         
     print(f"Parity plots saved to: {save_dir}")
@@ -528,7 +505,7 @@ def main():
     print(f"  Random state: {args.random_state}")  
     # Set output directory
     if args.output_dir is None:
-        args.output_dir = os.path.join(args.data_dir, 'Results', 'virusCommandline')
+        args.output_dir = os.path.join(args.data_dir, 'Results', 'bacteriaCommandline')
     os.makedirs(args.output_dir, exist_ok=True)
     print(f"  Output directory: {args.output_dir}")
     
