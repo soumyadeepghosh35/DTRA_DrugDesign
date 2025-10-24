@@ -134,4 +134,5 @@ DrugDesignData/
 PubchemData/bioassayDataPubchem/
 PubchemData/databaseData/
 PubchemData/output
+PubchemData/catboost_info
 
