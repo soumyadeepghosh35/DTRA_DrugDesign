@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Multi-Model Comparison for Drug Discovery - Optimized & Complete Version
+Multi-Model Comparison
 Usage: python Step4_MLmodelComparison.py --config config.yaml
    or: python Step4_MLmodelComparison.py [command line args]
 """
@@ -40,6 +40,13 @@ from xgboost import XGBRegressor
 from joblib import Parallel, delayed, dump
 import multiprocessing
 
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    print("Warning: psutil not available. Install with 'pip install psutil' for memory monitoring")
+
 sys.path.append('../')
 from macaw import MACAW
 
@@ -51,7 +58,7 @@ from macaw import MACAW
 DEFAULT_CONFIG = {
     # Input/Output paths
     'inputFile': '/users/sghosh6/DTRA_project/MACAW/DrugDesignData/modelBuildingData/allBacteriaData_chEMBL_noDuplicates_MLready.csv',
-    'outputDir': '/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/bacteriaCommandline/',
+    'outputDir': '/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/bacteriaCommandline_10fold/wDuplicates_fineGrid/',
     'filePrefix': 'noDuplicates',
     
     # Data columns
@@ -64,7 +71,7 @@ DEFAULT_CONFIG = {
     'randomState': 42,
     'nJobs': 4,
     'nSamples': None,
-    'testSize': 0.2,  # For holdout validation
+    'testSize': 0.2,
     
     # MACAW parameters
     'macawTypeFp': 'atompairs',
@@ -72,12 +79,25 @@ DEFAULT_CONFIG = {
     'macawNComponents': 15,
     'macawNLandmarks': 200,
     
+    # Batch processing parameters
+    'batchSize': 10000,  # Process 20K samples at a time
+    'enableBatching': True,  # Auto-enable for large datasets
+    'batchThreshold': 50000,  # Enable batching if dataset > 50K
+    
     # Optimization parameters
-    'parallelStrategy': 'folds',  # 'folds' or 'models'
+    'parallelStrategy': 'folds',
     'memoryEfficient': True,
 }
 
 # ----------------------------------------------------------------------------
+
+
+def printMemoryUsage(label=""):
+    """Print current memory usage"""
+    if PSUTIL_AVAILABLE:
+        process = psutil.Process()
+        mem_gb = process.memory_info().rss / 1024**3
+        print(f"  [Memory {label}]: {mem_gb:.2f} GB")
 
 
 def parseYamlConfig(yamlPath):
@@ -89,7 +109,8 @@ def parseYamlConfig(yamlPath):
     for key, value in yamlConfig.items():
         if value == 'None' or value is None:
             config[key] = None
-        elif key in ['nFolds', 'randomState', 'nJobs', 'nSamples', 'macawNComponents', 'macawNLandmarks']:
+        elif key in ['nFolds', 'randomState', 'nJobs', 'nSamples', 'macawNComponents', 
+                     'macawNLandmarks', 'batchSize', 'batchThreshold']:
             config[key] = int(value) if value != 'None' and value is not None else None
         elif key in ['testSize']:
             config[key] = float(value) if value != 'None' and value is not None else 0.2
@@ -98,7 +119,7 @@ def parseYamlConfig(yamlPath):
                 config[key] = [x.strip() for x in value.split(',')] if value != 'None' else None
             else:
                 config[key] = value
-        elif key == 'memoryEfficient':
+        elif key in ['memoryEfficient', 'enableBatching']:
             config[key] = bool(value)
         else:
             config[key] = value
@@ -108,7 +129,7 @@ def parseYamlConfig(yamlPath):
 
 def parseArguments():
     """Parse command line arguments or config file"""
-    parser = argparse.ArgumentParser(description='Multi-Model Comparison for Drug Discovery')
+    parser = argparse.ArgumentParser(description='Multi-Model Comparison for Drug Discovery - Batch Processing')
     
     parser.add_argument('--config', type=str, default=None,
                         help='Path to configuration file (YAML format)')
@@ -120,8 +141,10 @@ def parseArguments():
     parser.add_argument('--nJobs', type=int, default=None)
     parser.add_argument('--randomState', type=int, default=None)
     parser.add_argument('--testSize', type=float, default=None)
+    parser.add_argument('--batchSize', type=int, default=None)
     parser.add_argument('--parallelStrategy', type=str, choices=['folds', 'models'], default=None)
     parser.add_argument('--memoryEfficient', action='store_true')
+    parser.add_argument('--disableBatching', action='store_true')
     
     args = parser.parse_args()
     
@@ -132,12 +155,15 @@ def parseArguments():
         config.update(yamlConfig)
     
     for key in ['inputFile', 'outputDir', 'filePrefix', 'nSamples', 'nFolds', 
-                'nJobs', 'randomState', 'testSize', 'parallelStrategy']:
+                'nJobs', 'randomState', 'testSize', 'parallelStrategy', 'batchSize']:
         if getattr(args, key) is not None:
             config[key] = getattr(args, key)
     
     if args.memoryEfficient:
         config['memoryEfficient'] = True
+        
+    if args.disableBatching:
+        config['enableBatching'] = False
     
     return config
 
@@ -212,9 +238,41 @@ def loadAndPrepareData(config):
         print(f"Sampled down to: {len(smiles)} samples")
     
     print(f"Final dataset size: {len(smiles)} samples")
+    printMemoryUsage("after data loading")
+    
     return smiles, Y
 
 
+
+def getParamGrids():
+    """Define parameter grids for all models"""
+    return {
+        'SVR': {
+            'C': [1, 10, 100],
+            'epsilon': [0.1, 1, 10],
+            'kernel': ['rbf']
+        },
+        'RandomForest': {
+            'n_estimators': [100, 200, 300],
+            'max_depth': [10, 20, 30, None],
+            'min_samples_split': [2, 5, 10],
+            'min_samples_leaf': [1, 2, 4]
+        },
+        'XGBoost': {
+            'n_estimators': [100, 200],
+            'max_depth': [3, 5, 7],
+            'learning_rate': [0.05, 0.1],
+            'subsample': [0.8, 1.0]
+        },
+        'NeuralNetwork': {
+            'hidden_layer_sizes': [(50,), (100,), (50, 50)],
+            'alpha': [0.0001, 0.001],
+            'learning_rate': ['constant', 'adaptive'],
+            'max_iter': [500]
+        }
+    }
+
+'''
 def getParamGrids():
     """Define parameter grids for all models"""
     return {
@@ -241,7 +299,7 @@ def getParamGrids():
             'max_iter': [500]
         }
     }
-
+'''
 
 def trainSingleModel(modelName, xTrain, yTrain, xTest, yTest, paramGrid, randomState=42):
     """Train a single model with grid search - NO internal parallelism"""
@@ -349,13 +407,11 @@ def trainAndEvaluateModels_FoldParallel(smiles, Y, kf, macawParams, paramGrids,
     # Convert smiles to list once
     smilesArray = smiles.tolist()
     
-    # Determine number of parallel jobs (use exactly nJobs)
+    # Determine number of parallel jobs
     numFolds = kf.get_n_splits()
     nJobsToUse = min(nJobs, numFolds)
     
-    print(f"Parallel strategy: FOLDS")
-    print(f"Using {nJobsToUse} parallel workers for {numFolds} folds")
-    print(f"Memory efficient mode: {memoryEfficient}")
+    print(f"  Using {nJobsToUse} parallel workers for {numFolds} folds")
     
     # Parallelize across folds ONLY
     foldResultsList = Parallel(n_jobs=nJobsToUse, verbose=1, backend='loky')(
@@ -388,71 +444,137 @@ def trainAndEvaluateModels_FoldParallel(smiles, Y, kf, macawParams, paramGrids,
     return results
 
 
-def processSingleModel(modelName, trainIndex, testIndex, smilesArray, Y, macawParams,
-                       paramGrid, kf, randomState=42):
-    """Process all CV folds for a single model"""
-    
-    modelResults = {'trainPred': [], 'trainObs': [], 'testPred': [], 'testObs': [], 'bestParams': []}
-    
-    for foldId, (trainIdx, testIdx) in enumerate(kf.split(smilesArray), 1):
-        smiTrain = [smilesArray[i] for i in trainIdx]
-        smiTest = [smilesArray[i] for i in testIdx]
-        yTrain = Y[trainIdx]
-        yTest = Y[testIdx]
-        
-        # Create and fit MACAW
-        mcwFold = MACAW(**macawParams)
-        mcwFold.fit(smiTrain, yTrain)
-        
-        xTrain = mcwFold.transform(smiTrain)
-        xTest = mcwFold.transform(smiTest)
-        
-        # Train model
-        foldResult = trainSingleModel(
-            modelName, xTrain, yTrain, xTest, yTest, paramGrid, randomState
-        )
-        
-        for key in ['trainPred', 'trainObs', 'testPred', 'testObs']:
-            modelResults[key].extend(foldResult[key])
-        modelResults['bestParams'].append(foldResult['bestParams'])
-        
-        # Clean up
-        del mcwFold, xTrain, xTest
-        gc.collect()
-    
-    # Convert to arrays
-    for key in ['trainPred', 'trainObs', 'testPred', 'testObs']:
-        modelResults[key] = np.array(modelResults[key])
-    
-    return modelResults
+# ============================================================================
+# BATCH PROCESSING FUNCTIONS
+# ============================================================================
 
-
-def trainAndEvaluateModels_ModelParallel(smiles, Y, kf, macawParams, paramGrids,
-                                          nJobs=4, randomState=42):
-    """Train models with parallelization across models"""
+def processBatch(batchId, smilesBatch, yBatch, kf, macawParams, paramGrids, 
+                 nJobs, randomState, memoryEfficient):
+    """Process a single batch of data through CV"""
     
-    modelNames = ['SVR', 'RandomForest', 'XGBoost', 'NeuralNetwork']
-    smilesArray = smiles.tolist()
+    print(f"\n{'*'*80}")
+    print(f"BATCH {batchId}: Processing {len(smilesBatch)} samples")
+    print(f"{'*'*80}")
+    printMemoryUsage(f"Batch {batchId} start")
     
-    nJobsToUse = min(nJobs, len(modelNames))
-    
-    print(f"Parallel strategy: MODELS")
-    print(f"Using {nJobsToUse} parallel workers for {len(modelNames)} models")
-    
-    # Parallelize across models
-    modelResultsList = Parallel(n_jobs=nJobsToUse, verbose=1, backend='loky')(
-        delayed(processSingleModel)(
-            modelName, None, None, smilesArray, Y, macawParams,
-            paramGrids[modelName], kf, randomState
-        )
-        for modelName in modelNames
+    # Run CV on this batch
+    batchResults = trainAndEvaluateModels_FoldParallel(
+        smilesBatch, yBatch, kf, macawParams, paramGrids,
+        nJobs, randomState, memoryEfficient
     )
     
-    results = {modelName: modelResultsList[i] for i, modelName in enumerate(modelNames)}
+    printMemoryUsage(f"Batch {batchId} end")
+    gc.collect()
+    
+    return batchResults
+
+
+def mergeBatchResults(batchResultsList):
+    """Merge results from multiple batches"""
+    
+    print(f"\n{'*'*80}")
+    print(f"MERGING RESULTS FROM {len(batchResultsList)} BATCHES")
+    print(f"{'*'*80}")
+    
+    modelNames = list(batchResultsList[0].keys())
+    
+    # Initialize merged results
+    mergedResults = {
+        name: {
+            'trainPred': [], 
+            'trainObs': [], 
+            'testPred': [], 
+            'testObs': [], 
+            'bestParams': []
+        }
+        for name in modelNames
+    }
+    
+    # Merge predictions from all batches
+    for batchResults in batchResultsList:
+        for modelName in modelNames:
+            for key in ['trainPred', 'trainObs', 'testPred', 'testObs']:
+                mergedResults[modelName][key].append(batchResults[modelName][key])
+            
+            # Collect all best params
+            mergedResults[modelName]['bestParams'].extend(batchResults[modelName]['bestParams'])
+    
+    # Concatenate arrays
+    for modelName in modelNames:
+        for key in ['trainPred', 'trainObs', 'testPred', 'testObs']:
+            mergedResults[modelName][key] = np.concatenate(mergedResults[modelName][key])
+    
+    # Report merged sizes
+    for modelName in modelNames:
+        print(f"  {modelName}: {len(mergedResults[modelName]['testPred'])} total predictions")
     
     gc.collect()
-    return results
+    return mergedResults
 
+
+def trainAndEvaluateModels_Batched(smiles, Y, config, macawParams, paramGrids):
+    """
+    Train models using batch processing for large datasets
+    Splits data into batches, processes each batch independently, then merges results
+    """
+    
+    nSamples = len(smiles)
+    batchSize = config['batchSize']
+    nBatches = (nSamples + batchSize - 1) // batchSize
+    
+    print(f"\n{'*'*80}")
+    print(f"BATCH PROCESSING MODE")
+    print(f"{'*'*80}")
+    print(f"Total samples: {nSamples:,}")
+    print(f"Batch size: {batchSize:,}")
+    print(f"Number of batches: {nBatches}")
+    print(f"Parallel jobs per batch: {config['nJobs']}")
+    print(f"CV folds: {config['nFolds']}")
+    print(f"{'*'*80}")
+    
+    # Initialize KFold
+    kf = KFold(n_splits=config['nFolds'], shuffle=True, random_state=config['randomState'])
+    
+    # Process each batch
+    batchResultsList = []
+    
+    for batchIdx in range(nBatches):
+        startIdx = batchIdx * batchSize
+        endIdx = min(startIdx + batchSize, nSamples)
+        
+        # Extract batch
+        smilesBatch = smiles.iloc[startIdx:endIdx].reset_index(drop=True)
+        yBatch = Y[startIdx:endIdx]
+        
+        print(f"\nBatch {batchIdx + 1}/{nBatches}: Samples {startIdx:,} to {endIdx:,}")
+        
+        # Process this batch
+        batchResults = processBatch(
+            batchIdx + 1, smilesBatch, yBatch, kf, macawParams, paramGrids,
+            config['nJobs'], config['randomState'], config['memoryEfficient']
+        )
+        
+        batchResultsList.append(batchResults)
+        
+        # Clear memory
+        del smilesBatch, yBatch
+        gc.collect()
+        
+        printMemoryUsage(f"after batch {batchIdx + 1}")
+    
+    # Merge all batch results
+    mergedResults = mergeBatchResults(batchResultsList)
+    
+    # Clear batch results
+    del batchResultsList
+    gc.collect()
+    
+    return mergedResults
+
+
+# ============================================================================
+# METRICS AND SAVING FUNCTIONS
+# ============================================================================
 
 def calculateMetricsTable(results):
     """Calculate performance metrics"""
@@ -645,17 +767,33 @@ def trainAndSaveAllModels(smiles, Y, modelResults, macawParams, saveDir, prefix,
     savedModels = {}
     fullDataMetrics = []
     
-    print(f"\nTraining on {(1-testSize)*100:.0f}% of data, testing on {testSize*100:.0f}%")
+    print(f"\n{'*'*80}")
+    print(f"TRAINING FINAL MODELS ON FULL DATASET")
+    print(f"{'*'*80}")
+    print(f"Training on {(1-testSize)*100:.0f}% of data, testing on {testSize*100:.0f}%")
     
     for modelName in modelNames:
-        print(f"Training {modelName} on full dataset with holdout validation...")
-        bestParams = modelResults[modelName]['bestParams'][0]
+        print(f"\nTraining {modelName}...")
+        printMemoryUsage(f"before {modelName}")
+        
+        # Use most common best params from CV
+        bestParamsList = modelResults[modelName]['bestParams']
+        # Simple majority vote for each parameter
+        from collections import Counter
+        bestParams = {}
+        if bestParamsList:
+            for key in bestParamsList[0].keys():
+                values = [params[key] for params in bestParamsList]
+                bestParams[key] = Counter(values).most_common(1)[0][0]
+        
         finalModel, metrics = trainAndSaveModel(
             smiles, Y, modelName, bestParams, macawParams, saveDir, prefix, 
             randomState, testSize
         )
         savedModels[modelName] = finalModel
         fullDataMetrics.append(metrics)
+        
+        printMemoryUsage(f"after {modelName}")
         gc.collect()
     
     # Save full data metrics summary
@@ -665,7 +803,9 @@ def trainAndSaveAllModels(smiles, Y, modelResults, macawParams, saveDir, prefix,
         index=False
     )
     
-    print("\nFull Data Holdout Performance:")
+    print("\n" + "="*80)
+    print("FULL DATA HOLDOUT PERFORMANCE")
+    print("="*80)
     print(dfFullMetrics[['Model', 'Train_R2', 'Train_MAE', 'Test_R2', 'Test_MAE', 'N_train', 'N_test']].to_string(index=False))
     
     return savedModels, dfFullMetrics
@@ -754,15 +894,15 @@ def generateComprehensiveReport(results, dfMetrics, dfFullMetrics, savePath):
 
 
 def main():
-    """Main execution"""
+    """Main execution with batch processing support"""
     startTime = time.time()
     
     # Load configuration
     config = parseArguments()
     
-    print(f"{'-'*80}")
-    print(f"MULTI-MODEL COMPARISON FOR DRUG DISCOVERY")
-    print(f"{'-'*80}")
+    print(f"{'*'*80}")
+    print(f"MULTI-MODEL COMPARISON - BATCH PROCESSING VERSION")
+    print(f"{'*'*80}")
     print(f"Job started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"")
     
@@ -772,22 +912,22 @@ def main():
         print(f"Warning: nJobs ({config['nJobs']}) > available cores ({maxCores}). Using {maxCores}.")
         config['nJobs'] = maxCores
     
-    # Read file to get shape
-    dfInput = pd.read_csv(config['inputFile'])
-    print(f"Input file: {config['inputFile']}")
-    print(f"Input file shape: {dfInput.shape}")
-    print(f"Output Directory: {config['outputDir']}")
-    print(f"File Prefix: {config['filePrefix']}")
-    print(f"Using {config['nJobs']} CPU cores")
-    print(f"Parallel Strategy: {config['parallelStrategy']}")
-    print(f"Memory Efficient Mode: {config['memoryEfficient']}")
-    print(f"")
-    
     # Load data
-    print(f"{'-'*80}")
+    print(f"{'*'*80}")
     print("DATA LOADING AND PREPARATION")
-    print(f"{'-'*80}")
+    print(f"{'*'*80}")
     smiles, Y = loadAndPrepareData(config)
+    
+    # Determine if batching should be used
+    useBatching = config['enableBatching'] and len(smiles) >= config['batchThreshold']
+    
+    if useBatching:
+        print(f"\n  LARGE DATASET DETECTED: {len(smiles):,} samples")
+        print(f"   Batch processing ENABLED (threshold: {config['batchThreshold']:,})")
+        print(f"   Batch size: {config['batchSize']:,}")
+    else:
+        print(f"\n  Dataset size: {len(smiles):,} samples")
+        print(f"   Using standard processing (no batching)")
     
     # MACAW parameters
     macawParams = {
@@ -802,20 +942,28 @@ def main():
     for key, value in macawParams.items():
         print(f"  {key}: {value}")
     
-    # Initialize KFold and parameter grids
-    kf = KFold(n_splits=config['nFolds'], shuffle=True, random_state=config['randomState'])
+    print(f"\nModel Training Configuration:")
+    print(f"  CV Folds: {config['nFolds']}")
+    print(f"  Random State: {config['randomState']}")
+    print(f"  Parallel Jobs: {config['nJobs']}")
+    print(f"  Memory Efficient: {config['memoryEfficient']}")
+    
+    # Get parameter grids
     paramGrids = getParamGrids()
     
-    # Train and evaluate models with chosen parallel strategy
-    print(f"\n{'-'*80}")
+    # Train and evaluate models
+    print(f"\n{'*'*80}")
     print(f"CROSS-VALIDATION TRAINING ({config['nFolds']}-FOLD)")
-    print(f"{'-'*80}")
+    print(f"{'*'*80}")
     
-    if config['parallelStrategy'] == 'models':
-        modelResults = trainAndEvaluateModels_ModelParallel(
-            smiles, Y, kf, macawParams, paramGrids, config['nJobs'], config['randomState']
+    if useBatching:
+        # Use batch processing
+        modelResults = trainAndEvaluateModels_Batched(
+            smiles, Y, config, macawParams, paramGrids
         )
-    else:  # default: 'folds'
+    else:
+        # Use standard processing
+        kf = KFold(n_splits=config['nFolds'], shuffle=True, random_state=config['randomState'])
         modelResults = trainAndEvaluateModels_FoldParallel(
             smiles, Y, kf, macawParams, paramGrids, 
             config['nJobs'], config['randomState'], config['memoryEfficient']
@@ -823,9 +971,9 @@ def main():
     
     # Calculate CV metrics
     dfComparison = calculateMetricsTable(modelResults)
-    print(f"\n{'-'*80}")
+    print(f"\n{'*'*80}")
     print("CV METRICS SUMMARY")
-    print(f"{'-'*80}")
+    print(f"{'*'*80}")
     print(dfComparison.to_string(index=False))
     
     # Save CV results
@@ -833,55 +981,54 @@ def main():
     print(f"\nCV results saved to: {config['outputDir']}")
     
     # Train and save ALL models on full dataset WITH HOLDOUT SPLIT
-    print(f"\n{'-'*80}")
-    print("TRAINING FINAL MODELS WITH HOLDOUT VALIDATION")
-    print(f"{'-'*80}")
     savedModels, dfFullMetrics = trainAndSaveAllModels(
         smiles, Y, modelResults, macawParams, 
         config['outputDir'], config['filePrefix'], 
         config['randomState'], config['testSize']
     )
     
-    # Generate comprehensive report with both CV and holdout results
+    # Generate comprehensive report
     reportPath = os.path.join(config['outputDir'], f'{config["filePrefix"]}_comprehensive_report.txt')
     report = generateComprehensiveReport(modelResults, dfComparison, dfFullMetrics, reportPath)
     print(f"\n{report}")
     
     # Final summary
-    print(f"\n{'-'*80}")
+    print(f"\n{'*'*80}")
     print("SAVED FILES SUMMARY")
-    print(f"{'-'*80}")
+    print(f"{'*'*80}")
     
     print("\n1. MODELS (.joblib files):")
-    for modelName in savedModels.keys():
+    for modelName in ['SVR', 'RandomForest', 'XGBoost', 'NeuralNetwork']:
         print(f"   {config['filePrefix']}_{modelName}_regr_pred.joblib")
         print(f"   {config['filePrefix']}_{modelName}_macaw_model.joblib")
         if modelName == 'NeuralNetwork':
             print(f"   {config['filePrefix']}_{modelName}_scaler.joblib")
     
     print("\n2. CROSS-VALIDATION PREDICTIONS:")
-    print(f"   {config['filePrefix']}_predictions_test_*.csv (aggregated from all CV folds)")
-    print(f"   {config['filePrefix']}_predictions_train_*.csv (aggregated from all CV folds)")
+    print(f"   {config['filePrefix']}_predictions_test_*.csv")
+    print(f"   {config['filePrefix']}_predictions_train_*.csv")
     
-    print("\n3. HOLDOUT VALIDATION PREDICTIONS (Full Data Split):")
-    print(f"   {config['filePrefix']}_predictions_fullData_train_*.csv (training set predictions)")
-    print(f"   {config['filePrefix']}_predictions_fullData_test_*.csv (test set predictions)")
+    print("\n3. HOLDOUT VALIDATION PREDICTIONS:")
+    print(f"   {config['filePrefix']}_predictions_fullData_train_*.csv")
+    print(f"   {config['filePrefix']}_predictions_fullData_test_*.csv")
     
     print("\n4. METRICS:")
-    print(f"   {config['filePrefix']}_metrics_summary.csv (CV metrics)")
-    print(f"   {config['filePrefix']}_fullData_metrics.csv (holdout validation metrics)")
+    print(f"   {config['filePrefix']}_metrics_summary.csv")
+    print(f"   {config['filePrefix']}_fullData_metrics.csv")
     
-    print("\n5. FEATURE IMPORTANCES (RandomForest & XGBoost):")
+    print("\n5. FEATURE IMPORTANCES:")
     print(f"   {config['filePrefix']}_RandomForest_feature_importances.csv")
     print(f"   {config['filePrefix']}_XGBoost_feature_importances.csv")
     
     print("\n6. COMPREHENSIVE REPORT:")
     print(f"   {config['filePrefix']}_comprehensive_report.txt")
     
-    print(f"\n{'-'*80}")
-    print(f"Completed in {time.time() - startTime:.1f}s")
+    elapsed = time.time() - startTime
+    print(f"\n{'*'*80}")
+    print(f"COMPLETED in {elapsed:.1f}s ({elapsed/60:.1f} minutes)")
     print(f"All results saved to: {config['outputDir']}")
-    print(f"{'-'*80}")
+    printMemoryUsage("final")
+    print(f"{'*'*80}")
 
 
 if __name__ == "__main__":
