@@ -80,7 +80,7 @@ DEFAULT_CONFIG = {
     'macawNLandmarks': 200,
     
     # Batch processing parameters
-    'batchSize': 5000,  # Process 20K samples at a time
+    'batchSize': 10000,  # Process 20K samples at a time
     'enableBatching': True,  # Auto-enable for large datasets
     'batchThreshold': 50000,  # Enable batching if dataset > 50K
     
