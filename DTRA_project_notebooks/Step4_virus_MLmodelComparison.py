@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Multi-Model Comparison for Antiviral Drug Discovery
-Run from command line: 
-* (full) python virus_MLmodelComparison.py --n_folds 10 --n_jobs 4 --random_state 42
-* (test) python virus_MLmodelComparison.py --n_samples 500 --n_folds 5 --n_jobs 4 --random_state 42
+Multi-Model Comparison
+Usage: python Step4_MLmodelComparison.py --config config.yaml
+   or: python Step4_MLmodelComparison.py [command line args]
 """
 
-import os
 import os
 os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['MKL_NUM_THREADS'] = '1'
@@ -16,103 +14,237 @@ os.environ['NUMEXPR_NUM_THREADS'] = '1'
 
 import sys
 import argparse
-# Completely suppress stderr output
+import yaml
 sys.stderr = open(os.devnull, 'w')
 import warnings
 warnings.filterwarnings('ignore')
-# Suppress RDKit warnings specifically
 os.environ['RDKIT_VERBOSITY'] = '0'
-# Suppress RDKit deprecation warnings
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
 import time
+from datetime import datetime
+import gc
 
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
-import matplotlib.pyplot as plt
-import seaborn as sns
 from copy import deepcopy
 
 from rdkit import Chem
-from sklearn.model_selection import KFold, GridSearchCV
+from sklearn.model_selection import KFold, GridSearchCV, train_test_split
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from xgboost import XGBRegressor
-from lightgbm import LGBMRegressor
-from catboost import CatBoostRegressor
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, dump
+import multiprocessing
 
-# Add MACAW to path
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    print("Warning: psutil not available. Install with 'pip install psutil' for memory monitoring")
+
 sys.path.append('../')
 from macaw import MACAW
 
 
-def parse_arguments():
-    """Parse command line arguments"""
-    parser = argparse.ArgumentParser(description='Multi-Model Comparison for Drug Discovery')
+# ----------------------------------------------------------------------------
+# CONFIGURATION SECTION
+# ----------------------------------------------------------------------------
+
+DEFAULT_CONFIG = {
+    # Input/Output paths
+    'inputFile': '/users/sghosh6/DTRA_project/MACAW/DrugDesignData/modelBuildingData/allvirusData_chEMBL_noDuplicates_MLready.csv',
+    'outputDir': '/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/virusCommandline_10fold/wDuplicates_fineGrid/',
+    'filePrefix': 'noDuplicates',
     
-    parser.add_argument('--data_dir', type=str, 
-                        default='/users/sghosh6/DTRA_project/MACAW/DrugDesignData/',
-                        help='Base data directory')
+    # Data columns
+    'smilesColumn': 'Smiles',
+    'targetColumn': 'pPotency',
+    'filterColumns': ['Smiles', 'virusClassifier', 'pPotency'],
     
-    parser.add_argument('--n_samples', type=int, default=None,
-                        help='Number of samples to use (for testing, use smaller number)')
+    # Model parameters
+    'nFolds': 10,
+    'randomState': 42,
+    'nJobs': 4,
+    'nSamples': None,
+    'testSize': 0.2,
     
-    parser.add_argument('--n_folds', type=int, default=10,
-                        help='Number of cross-validation folds')
+    # MACAW parameters
+    'macawTypeFp': 'atompairs',
+    'macawMetric': 'sokal',
+    'macawNComponents': 15,
+    'macawNLandmarks': 200,
     
-    parser.add_argument('--n_jobs', type=int, default=4,
-                        help='Number of CPU cores to use')
+    # Batch processing parameters
+    'batchSize': 10000,  # Process 20K samples at a time
+    'enableBatching': True,  # Auto-enable for large datasets
+    'batchThreshold': 50000,  # Enable batching if dataset > 50K
     
-    parser.add_argument('--random_state', type=int, default=42,
-                        help='Random state for reproducibility')
-    
-    parser.add_argument('--output_dir', type=str, default=None,
-                        help='Output directory (default: data_dir/Results/virusCommandline/)')
-    
-    return parser.parse_args()
+    # Optimization parameters
+    'parallelStrategy': 'folds',
+    'memoryEfficient': True,
+}
+
+# ----------------------------------------------------------------------------
 
 
-def load_and_prepare_data(data_dir, n_samples=None, random_state=42):
-    """Load and prepare the dataset"""
-    print("\n" + "-"*80)
-    print("LOADING AND PREPARING DATA")
-    print("-"*80)
+def printMemoryUsage(label=""):
+    """Print current memory usage"""
+    if PSUTIL_AVAILABLE:
+        process = psutil.Process()
+        mem_gb = process.memory_info().rss / 1024**3
+        print(f"  [Memory {label}]: {mem_gb:.2f} GB")
+
+
+def parseYamlConfig(yamlPath):
+    """Parse YAML configuration file"""
+    with open(yamlPath, 'r') as f:
+        yamlConfig = yaml.safe_load(f)
     
-    model_building_dir = os.path.join(data_dir, 'modelBuildingData/')
-    file_path = os.path.join(model_building_dir, 'allVirusData_chEMBL_wMACAW_MLready.csv')
+    config = {}
+    for key, value in yamlConfig.items():
+        if value == 'None' or value is None:
+            config[key] = None
+        elif key in ['nFolds', 'randomState', 'nJobs', 'nSamples', 'macawNComponents', 
+                     'macawNLandmarks', 'batchSize', 'batchThreshold']:
+            config[key] = int(value) if value != 'None' and value is not None else None
+        elif key in ['testSize']:
+            config[key] = float(value) if value != 'None' and value is not None else 0.2
+        elif key == 'filterColumns':
+            if isinstance(value, str):
+                config[key] = [x.strip() for x in value.split(',')] if value != 'None' else None
+            else:
+                config[key] = value
+        elif key in ['memoryEfficient', 'enableBatching']:
+            config[key] = bool(value)
+        else:
+            config[key] = value
     
-    print(f"Loading data from: {file_path}")
-    df = pd.read_csv(file_path)
+    return config
+
+
+def parseArguments():
+    """Parse command line arguments or config file"""
+    parser = argparse.ArgumentParser(description='Multi-Model Comparison for Drug Discovery - Batch Processing')
     
-    # Filter columns
-    df = df.filter(items=["Smiles", "VirusClassifier", "pPotency"])
+    parser.add_argument('--config', type=str, default=None,
+                        help='Path to configuration file (YAML format)')
+    parser.add_argument('--inputFile', type=str, default=None)
+    parser.add_argument('--outputDir', type=str, default=None)
+    parser.add_argument('--filePrefix', type=str, default=None)
+    parser.add_argument('--nSamples', type=int, default=None)
+    parser.add_argument('--nFolds', type=int, default=None)
+    parser.add_argument('--nJobs', type=int, default=None)
+    parser.add_argument('--randomState', type=int, default=None)
+    parser.add_argument('--testSize', type=float, default=None)
+    parser.add_argument('--batchSize', type=int, default=None)
+    parser.add_argument('--parallelStrategy', type=str, choices=['folds', 'models'], default=None)
+    parser.add_argument('--memoryEfficient', action='store_true')
+    parser.add_argument('--disableBatching', action='store_true')
     
-    # Extract data
-    smiles = df['Smiles'].astype(str).reset_index(drop=True)
-    Y = df['pPotency'].to_numpy(dtype=np.float32)
+    args = parser.parse_args()
+    
+    config = DEFAULT_CONFIG.copy()
+    
+    if args.config and os.path.exists(args.config):
+        yamlConfig = parseYamlConfig(args.config)
+        config.update(yamlConfig)
+    
+    for key in ['inputFile', 'outputDir', 'filePrefix', 'nSamples', 'nFolds', 
+                'nJobs', 'randomState', 'testSize', 'parallelStrategy', 'batchSize']:
+        if getattr(args, key) is not None:
+            config[key] = getattr(args, key)
+    
+    if args.memoryEfficient:
+        config['memoryEfficient'] = True
+        
+    if args.disableBatching:
+        config['enableBatching'] = False
+    
+    return config
+
+
+def loadAndPrepareData(config):
+    """Load and prepare dataset - works with any columns specified in filterColumns"""
+    df = pd.read_csv(config['inputFile'])
+    
+    print(f"Original columns in file: {df.columns.tolist()}")
+    print(f"Original shape: {df.shape}")
+    
+    # Filter columns if specified
+    if config['filterColumns']:
+        print(f"Requested filterColumns: {config['filterColumns']}")
+        actualCols = df.columns.tolist()
+        colMapping = {col.lower(): col for col in actualCols}
+        
+        validCols = []
+        for reqCol in config['filterColumns']:
+            if reqCol in actualCols:
+                validCols.append(reqCol)
+            elif reqCol.lower() in colMapping:
+                actualCol = colMapping[reqCol.lower()]
+                validCols.append(actualCol)
+                print(f"  Note: Using '{actualCol}' for requested '{reqCol}'")
+            else:
+                print(f"  Warning: Column '{reqCol}' not found in data!")
+        
+        if not validCols:
+            raise ValueError(f"None of the requested columns found in data!")
+        
+        df = df[validCols]
+        print(f"Columns after filtering: {df.columns.tolist()}")
+        print(f"Shape after filtering: {df.shape}")
+    
+    # Find smiles and target columns (case-insensitive)
+    colsLower = {col.lower(): col for col in df.columns}
+    
+    smilesColRequested = config['smilesColumn'].lower()
+    targetColRequested = config['targetColumn'].lower()
+    
+    if smilesColRequested not in colsLower:
+        raise ValueError(f"SMILES column '{config['smilesColumn']}' not found!")
+    if targetColRequested not in colsLower:
+        raise ValueError(f"Target column '{config['targetColumn']}' not found!")
+    
+    smilesColActual = colsLower[smilesColRequested]
+    targetColActual = colsLower[targetColRequested]
+    
+    print(f"Using SMILES column: '{smilesColActual}'")
+    print(f"Using Target column: '{targetColActual}'")
+    
+    smiles = df[smilesColActual].astype(str).reset_index(drop=True)
+    Y = df[targetColActual].to_numpy(dtype=np.float32)
+    
+    print(f"Initial data size: {len(smiles)} rows")
     
     # Validate SMILES
-    valid_idx = []
-    for i, s in enumerate(smiles):
-        if isinstance(s, str) and len(s) > 0 and Chem.MolFromSmiles(s) is not None:
-            valid_idx.append(i)
+    validIdx = [i for i, s in enumerate(smiles) 
+                if isinstance(s, str) and len(s) > 0 and Chem.MolFromSmiles(s) is not None]
     
-    smiles = smiles.iloc[valid_idx].reset_index(drop=True)
-    Y = Y[valid_idx]
+    smiles = smiles.iloc[validIdx].reset_index(drop=True)
+    Y = Y[validIdx]
     
-    print(f"Valid samples after SMILES validation: {len(smiles)}")
-    print("-"*80 + "\n")
+    print(f"Valid SMILES after validation: {len(smiles)} out of {len(df)}")
+    
+    if config['nSamples'] and config['nSamples'] < len(smiles):
+        np.random.seed(config['randomState'])
+        idx = np.random.choice(len(smiles), config['nSamples'], replace=False)
+        smiles = smiles.iloc[idx].reset_index(drop=True)
+        Y = Y[idx]
+        print(f"Sampled down to: {len(smiles)} samples")
+    
+    print(f"Final dataset size: {len(smiles)} samples")
+    printMemoryUsage("after data loading")
     
     return smiles, Y
 
 
-def get_param_grids():
+
+def getParamGrids():
     """Define parameter grids for all models"""
     return {
         'SVR': {
@@ -132,17 +264,6 @@ def get_param_grids():
             'learning_rate': [0.05, 0.1],
             'subsample': [0.8, 1.0]
         },
-        'LightGBM': {
-            'n_estimators': [100, 200],
-            'max_depth': [3, 5, 7],
-            'learning_rate': [0.05, 0.1],
-            'num_leaves': [31, 63]
-        },
-        'CatBoost': {
-            'iterations': [100, 200],
-            'depth': [4, 6, 8],
-            'learning_rate': [0.05, 0.1]
-        },
         'NeuralNetwork': {
             'hidden_layer_sizes': [(50,), (100,), (50, 50)],
             'alpha': [0.0001, 0.001],
@@ -151,454 +272,763 @@ def get_param_grids():
         }
     }
 
+'''
+def getParamGrids():
+    """Define parameter grids for all models"""
+    return {
+        'SVR': {
+            'C': [1, 10, 100],
+            'epsilon': [0.1, 1],
+            'kernel': ['rbf']
+        },
+        'RandomForest': {
+            'n_estimators': [100, 200],
+            'max_depth': [10, 20, None],
+            'min_samples_split': [2, 5]
+        },
+        'XGBoost': {
+            'n_estimators': [100, 200],
+            'max_depth': [3, 5],
+            'learning_rate': [0.05, 0.1],
+            'subsample': [0.8, 1.0]
+        },
+        'NeuralNetwork': {
+            'hidden_layer_sizes': [(50,), (100,)],
+            'alpha': [0.0001, 0.001],
+            'learning_rate': ['constant', 'adaptive'],
+            'max_iter': [500]
+        }
+    }
+'''
 
-
-
-def process_single_fold(fold_id, train_index, test_index, smiles, Y, mcw, 
-                        param_grids, n_jobs_inner, num_folds, verbose=True):
-    """Process a single fold for all models"""
-    if verbose:
-        print(f"\nFold {fold_id}/{num_folds}")
-        print("-" * 60)
+def trainSingleModel(modelName, xTrain, yTrain, xTest, yTest, paramGrid, randomState=42):
+    """Train a single model with grid search - NO internal parallelism"""
     
-    smi_train = smiles.iloc[train_index].tolist()
-    smi_test = smiles.iloc[test_index].tolist()
-    y_train = Y[train_index]
-    y_test = Y[test_index]
-    
-    # Clone MACAW to avoid conflicts
-    mcw_fold = deepcopy(mcw)
-    mcw_fold.fit(smi_train, y_train)
-    
-    X_train = mcw_fold.transform(smi_train)
-    X_test = mcw_fold.transform(smi_test)
-    
-    if verbose:
-        print(f"Training samples: {X_train.shape[0]}, Test samples: {X_test.shape[0]}")
-    
-    fold_results = {}
-    
-    # SVR
-    if verbose:
-        print("Training SVR...")
-    grid_svr = GridSearchCV(
-        SVR(), param_grids['SVR'],
-        cv=3, refit=True, n_jobs=n_jobs_inner,
-        scoring='neg_mean_absolute_error', verbose=0
-    )
-    grid_svr.fit(X_train, y_train)
-    fold_results['SVR'] = {
-        'train_pred': grid_svr.predict(X_train),
-        'train_obs': y_train,
-        'test_pred': grid_svr.predict(X_test),
-        'test_obs': y_test,
-        'best_params': grid_svr.best_params_
-    }
-    
-    # Random Forest
-    if verbose:
-        print("Training Random Forest...")
-    grid_rf = GridSearchCV(
-        RandomForestRegressor(random_state=42, n_jobs=1),  # n_jobs=1 to avoid nested parallelism
-        param_grids['RandomForest'],
-        cv=3, refit=True, n_jobs=n_jobs_inner,
-        scoring='neg_mean_absolute_error', verbose=0
-    )
-    grid_rf.fit(X_train, y_train)
-    fold_results['RandomForest'] = {
-        'train_pred': grid_rf.predict(X_train),
-        'train_obs': y_train,
-        'test_pred': grid_rf.predict(X_test),
-        'test_obs': y_test,
-        'best_params': grid_rf.best_params_
-    }
-    
-    # XGBoost
-    if verbose:
-        print("Training XGBoost...")
-    grid_xgb = GridSearchCV(
-        XGBRegressor(random_state=42, tree_method='hist', verbosity=0, n_jobs=1),
-        param_grids['XGBoost'],
-        cv=3, refit=True, n_jobs=n_jobs_inner,
-        scoring='neg_mean_absolute_error', verbose=0
-    )
-    grid_xgb.fit(X_train, y_train)
-    fold_results['XGBoost'] = {
-        'train_pred': grid_xgb.predict(X_train),
-        'train_obs': y_train,
-        'test_pred': grid_xgb.predict(X_test),
-        'test_obs': y_test,
-        'best_params': grid_xgb.best_params_
-    }
-    
-    # LightGBM
-    if verbose:
-        print("Training LightGBM...")
-    grid_lgbm = GridSearchCV(
-        LGBMRegressor(random_state=42, verbose=-1, n_jobs=1),
-        param_grids['LightGBM'],
-        cv=3, refit=True, n_jobs=n_jobs_inner,
-        scoring='neg_mean_absolute_error', verbose=0
-    )
-    grid_lgbm.fit(X_train, y_train)
-    fold_results['LightGBM'] = {
-        'train_pred': grid_lgbm.predict(X_train),
-        'train_obs': y_train,
-        'test_pred': grid_lgbm.predict(X_test),
-        'test_obs': y_test,
-        'best_params': grid_lgbm.best_params_
-    }
-    
-    # CatBoost
-    if verbose:
-        print("Training CatBoost...")
-    grid_cat = GridSearchCV(
-        CatBoostRegressor(random_state=42, verbose=False, thread_count=1),
-        param_grids['CatBoost'],
-        cv=3, refit=True, n_jobs=n_jobs_inner,
-        scoring='neg_mean_absolute_error', verbose=0
-    )
-    grid_cat.fit(X_train, y_train)
-    fold_results['CatBoost'] = {
-        'train_pred': grid_cat.predict(X_train),
-        'train_obs': y_train,
-        'test_pred': grid_cat.predict(X_test),
-        'test_obs': y_test,
-        'best_params': grid_cat.best_params_
-    }
-    
-    # Neural Network
-    if verbose:
-        print("Training Neural Network...")
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-    
-    grid_nn = GridSearchCV(
-        MLPRegressor(random_state=42, early_stopping=True),
-        param_grids['NeuralNetwork'],
-        cv=3, refit=True, n_jobs=n_jobs_inner,
-        scoring='neg_mean_absolute_error', verbose=0
-    )
-    grid_nn.fit(X_train_scaled, y_train)
-    fold_results['NeuralNetwork'] = {
-        'train_pred': grid_nn.predict(X_train_scaled),
-        'train_obs': y_train,
-        'test_pred': grid_nn.predict(X_test_scaled),
-        'test_obs': y_test,
-        'best_params': grid_nn.best_params_
-    }
-    
-    return fold_results
-
-
-def train_and_evaluate_models(smiles, Y, kf, mcw, param_grids, n_jobs=4, verbose=True):
-    """Train multiple regression models with parallelized cross-validation"""
-    
-    num_folds = kf.get_n_splits()
-    
-    # Configure parallelization
-    total_cores = n_jobs
-    n_jobs_outer = min(num_folds, max(1, total_cores // 4))  # Parallel folds
-    n_jobs_inner = max(1, total_cores // n_jobs_outer)  # Cores per fold
-    
-    print(f"\nParallelization: {n_jobs_outer} parallel folds, {n_jobs_inner} cores each")
-    
-    # Process folds in parallel
-    fold_results_list = Parallel(n_jobs=n_jobs_outer, verbose=10)(
-        delayed(process_single_fold)(
-            fold_id=fold_id,
-            train_index=train_idx,
-            test_index=test_idx,
-            smiles=smiles,
-            Y=Y,
-            mcw=mcw,
-            param_grids=param_grids,
-            n_jobs_inner=n_jobs_inner,
-            num_folds=num_folds,
-            verbose=False  # Reduce verbosity in parallel
+    if modelName == 'SVR':
+        grid = GridSearchCV(
+            SVR(), paramGrid, cv=3, refit=True, n_jobs=1,
+            scoring='neg_mean_absolute_error', verbose=0
         )
-        for fold_id, (train_idx, test_idx) in enumerate(kf.split(smiles), 1)
-    )
-    
-    # Combine results from all folds
-    model_names = ['SVR', 'RandomForest', 'XGBoost', 'LightGBM', 'CatBoost', 'NeuralNetwork']
-    results = {}
-    for name in model_names:
-        results[name] = {
-            'train_pred': [], 'train_obs': [],
-            'test_pred': [], 'test_obs': [],
-            'best_params': []
+        grid.fit(xTrain, yTrain)
+        
+    elif modelName == 'RandomForest':
+        grid = GridSearchCV(
+            RandomForestRegressor(random_state=randomState, n_jobs=1),
+            paramGrid, cv=3, refit=True, n_jobs=1,
+            scoring='neg_mean_absolute_error', verbose=0
+        )
+        grid.fit(xTrain, yTrain)
+        
+    elif modelName == 'XGBoost':
+        grid = GridSearchCV(
+            XGBRegressor(random_state=randomState, tree_method='hist', verbosity=0, n_jobs=1),
+            paramGrid, cv=3, refit=True, n_jobs=1,
+            scoring='neg_mean_absolute_error', verbose=0
+        )
+        grid.fit(xTrain, yTrain)
+        
+    elif modelName == 'NeuralNetwork':
+        scaler = StandardScaler()
+        xTrainScaled = scaler.fit_transform(xTrain)
+        xTestScaled = scaler.transform(xTest)
+        
+        grid = GridSearchCV(
+            MLPRegressor(random_state=randomState, early_stopping=True),
+            paramGrid, cv=3, refit=True, n_jobs=1,
+            scoring='neg_mean_absolute_error', verbose=0
+        )
+        grid.fit(xTrainScaled, yTrain)
+        
+        return {
+            'trainPred': grid.predict(xTrainScaled),
+            'trainObs': yTrain,
+            'testPred': grid.predict(xTestScaled),
+            'testObs': yTest,
+            'bestParams': grid.best_params_
         }
     
-    for fold_result in fold_results_list:
-        for model_name in model_names:
-            results[model_name]['train_pred'].extend(fold_result[model_name]['train_pred'])
-            results[model_name]['train_obs'].extend(fold_result[model_name]['train_obs'])
-            results[model_name]['test_pred'].extend(fold_result[model_name]['test_pred'])
-            results[model_name]['test_obs'].extend(fold_result[model_name]['test_obs'])
-            results[model_name]['best_params'].append(fold_result[model_name]['best_params'])
+    return {
+        'trainPred': grid.predict(xTrain),
+        'trainObs': yTrain,
+        'testPred': grid.predict(xTest),
+        'testObs': yTest,
+        'bestParams': grid.best_params_
+    }
+
+
+def processSingleFold(foldId, trainIndex, testIndex, smilesArray, Y, macawParams, 
+                      paramGrids, modelNames, randomState=42, memoryEfficient=True):
+    """Process a single CV fold for all models - memory optimized"""
+    
+    # Extract data for this fold
+    smiTrain = [smilesArray[i] for i in trainIndex]
+    smiTest = [smilesArray[i] for i in testIndex]
+    yTrain = Y[trainIndex]
+    yTest = Y[testIndex]
+    
+    # Create and fit MACAW for this fold
+    mcwFold = MACAW(**macawParams)
+    mcwFold.fit(smiTrain, yTrain)
+    
+    xTrain = mcwFold.transform(smiTrain)
+    xTest = mcwFold.transform(smiTest)
+    
+    # Free memory if in memory-efficient mode
+    if memoryEfficient:
+        del smiTrain, smiTest
+        gc.collect()
+    
+    foldResults = {}
+    
+    # Train each model sequentially to save memory
+    for modelName in modelNames:
+        foldResults[modelName] = trainSingleModel(
+            modelName, xTrain, yTrain, xTest, yTest, 
+            paramGrids[modelName], randomState
+        )
+        
+        # Free memory after each model
+        if memoryEfficient:
+            gc.collect()
+    
+    # Clean up
+    del mcwFold, xTrain, xTest
+    gc.collect()
+    
+    return foldResults
+
+
+def trainAndEvaluateModels_FoldParallel(smiles, Y, kf, macawParams, paramGrids, 
+                                         nJobs=4, randomState=42, memoryEfficient=True):
+    """Train models with parallelization across folds - OPTIMIZED"""
+    
+    modelNames = ['SVR', 'RandomForest', 'XGBoost', 'NeuralNetwork']
+    
+    # Convert smiles to list once
+    smilesArray = smiles.tolist()
+    
+    # Determine number of parallel jobs
+    numFolds = kf.get_n_splits()
+    nJobsToUse = min(nJobs, numFolds)
+    
+    print(f"  Using {nJobsToUse} parallel workers for {numFolds} folds")
+    
+    # Parallelize across folds ONLY
+    foldResultsList = Parallel(n_jobs=nJobsToUse, verbose=1, backend='loky')(
+        delayed(processSingleFold)(
+            foldId, trainIdx, testIdx, smilesArray, Y, macawParams,
+            paramGrids, modelNames, randomState, memoryEfficient
+        )
+        for foldId, (trainIdx, testIdx) in enumerate(kf.split(smiles), 1)
+    )
+    
+    # Aggregate results
+    results = {name: {'trainPred': [], 'trainObs': [], 'testPred': [], 'testObs': [], 'bestParams': []}
+               for name in modelNames}
+    
+    for foldResult in foldResultsList:
+        for modelName in modelNames:
+            for key in ['trainPred', 'trainObs', 'testPred', 'testObs']:
+                results[modelName][key].extend(foldResult[modelName][key])
+            results[modelName]['bestParams'].append(foldResult[modelName]['bestParams'])
     
     # Convert to numpy arrays
-    for model_name in results:
-        for key in ['train_pred', 'train_obs', 'test_pred', 'test_obs']:
-            results[model_name][key] = np.array(results[model_name][key])
+    for modelName in results:
+        for key in ['trainPred', 'trainObs', 'testPred', 'testObs']:
+            results[modelName][key] = np.array(results[modelName][key])
+    
+    # Clean up
+    del foldResultsList
+    gc.collect()
     
     return results
 
 
-def calculate_metrics_table(results):
-    """Calculate performance metrics for all models"""
-    metrics_data = []
-    model_order = ['SVR', 'RandomForest', 'XGBoost', 'LightGBM', 'CatBoost', 'NeuralNetwork']
-    
-    for model_name in model_order:
-        data = results[model_name]
-        
-        train_mae = mean_absolute_error(data['train_obs'], data['train_pred'])
-        train_rmse = np.sqrt(mean_squared_error(data['train_obs'], data['train_pred']))
-        train_r2 = r2_score(data['train_obs'], data['train_pred'])
-        
-        test_mae = mean_absolute_error(data['test_obs'], data['test_pred'])
-        test_rmse = np.sqrt(mean_squared_error(data['test_obs'], data['test_pred']))
-        test_r2 = r2_score(data['test_obs'], data['test_pred'])
-        
-        metrics_data.append({
-            'Model': model_name,
-            'Train_R2': round(train_r2, 2),
-            'Train_MAE': round(train_mae, 2),
-            'Train_RMSE': round(train_rmse, 2),
-            'Test_R2': round(test_r2, 2),
-            'Test_MAE': round(test_mae, 2),
-            'Test_RMSE': round(test_rmse, 2)
-        })
-    
-    df_metrics = pd.DataFrame(metrics_data)
-    return df_metrics
+# ============================================================================
+# BATCH PROCESSING FUNCTIONS
+# ============================================================================
 
-
-def save_results(results, df_metrics, save_dir):
-    """Save all predictions and metrics to CSV files"""
-    os.makedirs(save_dir, exist_ok=True)
+def processBatch(batchId, smilesBatch, yBatch, kf, macawParams, paramGrids, 
+                 nJobs, randomState, memoryEfficient):
+    """Process a single batch of data through CV"""
     
-    df_metrics.to_csv(os.path.join(save_dir, 'metrics_summary.csv'), index=False)
+    print(f"\n{'*'*80}")
+    print(f"BATCH {batchId}: Processing {len(smilesBatch)} samples")
+    print(f"{'*'*80}")
+    printMemoryUsage(f"Batch {batchId} start")
     
-    for model_name, data in results.items():
-        df_test = pd.DataFrame({
-            'Observed': data['test_obs'],
-            'Predicted': data['test_pred'],
-            'Residual': data['test_obs'] - data['test_pred'],
-            'Absolute_Error': np.abs(data['test_obs'] - data['test_pred'])
-        })
-        df_test.to_csv(os.path.join(save_dir, f'predictions_test_{model_name}.csv'), index=False)
-        
-        df_train = pd.DataFrame({
-            'Observed': data['train_obs'],
-            'Predicted': data['train_pred'],
-            'Residual': data['train_obs'] - data['train_pred'],
-            'Absolute_Error': np.abs(data['train_obs'] - data['train_pred'])
-        })
-        df_train.to_csv(os.path.join(save_dir, f'predictions_train_{model_name}.csv'), index=False)
-
-
-def generate_report(results, df_metrics, save_path):
-    """Generate text summary report"""
-    report = []
-    report.append("Model Comparison Summary")
-    report.append("-" * 80)
-    report.append("")
-    
-    best_idx = df_metrics['Test_R2'].idxmax()
-    best_model = df_metrics.iloc[best_idx]['Model']
-    best_r2 = df_metrics.iloc[best_idx]['Test_R2']
-    
-    report.append(f"Best model (test R²): {best_model} (R² = {best_r2:.3f})")
-    report.append("")
-    
-    report.append("Performance ranking (by test R²):")
-    report.append("-" * 80)
-    df_sorted = df_metrics.sort_values('Test_R2', ascending=False)
-    for idx, row in df_sorted.iterrows():
-        report.append(f"{idx+1}. {row['Model']:15s} - R²: {row['Test_R2']:.3f}, "
-                     f"MAE: {row['Test_MAE']:.2f}, RMSE: {row['Test_RMSE']:.2f}")
-    report.append("")
-    
-    report.append("Detailed metrics:")
-    report.append("-" * 80)
-    report.append(df_metrics.to_string(index=False))
-    report.append("")
-    
-    report.append("Model analysis:")
-    report.append("-" * 80)
-    for model_name, data in results.items():
-        train_r2 = r2_score(data['train_obs'], data['train_pred'])
-        test_r2 = r2_score(data['test_obs'], data['test_pred'])
-        overfit_gap = train_r2 - test_r2
-        
-        report.append(f"\n{model_name}:")
-        report.append(f"  Train R²: {train_r2:.3f}")
-        report.append(f"  Test R²: {test_r2:.3f}")
-        report.append(f"  Overfitting gap: {overfit_gap:.3f}")
-        
-        if overfit_gap < 0.05:
-            report.append(f"  Status: Excellent generalization")
-        elif overfit_gap < 0.10:
-            report.append(f"  Status: Good generalization")
-        elif overfit_gap < 0.15:
-            report.append(f"  Status: Moderate overfitting")
-        else:
-            report.append(f"  Status: High overfitting")
-    
-    report.append("")
-    report.append("-" * 80)
-    
-    full_report = "\n".join(report)
-    
-    with open(save_path, 'w') as f:
-        f.write(full_report)
-    
-    return full_report
-
-def create_parity_plots(results, save_dir):
-    """Generate parity plots for all models"""
-    import matplotlib
-    matplotlib.use('Agg')  # Non-interactive backend
-    import matplotlib.pyplot as plt
-    
-    os.makedirs(save_dir, exist_ok=True)
-    
-    for model_name, data in results.items():
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-        
-        # Test set parity plot
-        ax1.scatter(data['test_obs'], data['test_pred'], alpha=0.5, s=20)
-        min_val = min(data['test_obs'].min(), data['test_pred'].min())
-        max_val = max(data['test_obs'].max(), data['test_pred'].max())
-        ax1.plot([min_val, max_val], [min_val, max_val], 'r--', lw=2, label='Perfect prediction')
-        ax1.set_xlabel('Observed pPotency', fontsize=12)
-        ax1.set_ylabel('Predicted pPotency', fontsize=12)
-        ax1.set_title(f'{model_name} - Test Set', fontsize=14)
-        ax1.legend()
-        ax1.grid(True, alpha=0.3)
-        
-        test_r2 = r2_score(data['test_obs'], data['test_pred'])
-        test_mae = mean_absolute_error(data['test_obs'], data['test_pred'])
-        ax1.text(0.05, 0.95, f'R² = {test_r2:.3f}\nMAE = {test_mae:.2f}',
-                transform=ax1.transAxes, fontsize=10, verticalalignment='top',
-                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-        
-        # Train set parity plot
-        ax2.scatter(data['train_obs'], data['train_pred'], alpha=0.5, s=20)
-        min_val = min(data['train_obs'].min(), data['train_pred'].min())
-        max_val = max(data['train_obs'].max(), data['train_pred'].max())
-        ax2.plot([min_val, max_val], [min_val, max_val], 'r--', lw=2, label='Perfect prediction')
-        ax2.set_xlabel('Observed pPotency', fontsize=12)
-        ax2.set_ylabel('Predicted pPotency', fontsize=12)
-        ax2.set_title(f'{model_name} - Train Set', fontsize=14)
-        ax2.legend()
-        ax2.grid(True, alpha=0.3)
-        
-        train_r2 = r2_score(data['train_obs'], data['train_pred'])
-        train_mae = mean_absolute_error(data['train_obs'], data['train_pred'])
-        ax2.text(0.05, 0.95, f'R² = {train_r2:.3f}\nMAE = {train_mae:.2f}',
-                transform=ax2.transAxes, fontsize=10, verticalalignment='top',
-                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-        
-        plt.tight_layout()
-        plt.savefig(os.path.join(save_dir, f'parity_plot_virus_{model_name}.png'), dpi=300, bbox_inches='tight')
-        plt.savefig(os.path.join(save_dir, f'parity_plot_virus_{model_name}.svg'), bbox_inches='tight')
-        plt.close()
-        
-    print(f"Parity plots saved to: {save_dir}")
-    
-def main():
-    """Main execution function"""
-    start_time = time.time()
-    
-    args = parse_arguments()
-    
-    print("\n" + "-"*80)
-    print("MULTI-MODEL COMPARISON FOR ANTIVIRAL DRUG DISCOVERY")
-    print("-"*80)
-    print(f"Configuration:")
-    print(f"  Data directory: {args.data_dir}")
-    print(f"  Number of samples: {args.n_samples}")
-    print(f"  Number of folds: {args.n_folds}")
-    print(f"  CPU cores: {args.n_jobs}")
-    print(f"  Random state: {args.random_state}")  
-    # Set output directory
-    if args.output_dir is None:
-        args.output_dir = os.path.join(args.data_dir, 'Results', 'virusCommandline')
-    os.makedirs(args.output_dir, exist_ok=True)
-    print(f"  Output directory: {args.output_dir}")
-    
-    # Load data
-    smiles, Y = load_and_prepare_data(args.data_dir, args.n_samples, args.random_state)
-    
-    # Initialize MACAW
-    print("Initializing MACAW embeddings...")
-    mcw = MACAW(
-        type_fp='atompairs',
-        metric='sokal',
-        n_components=15,
-        n_landmarks=200,
-        random_state=args.random_state
+    # Run CV on this batch
+    batchResults = trainAndEvaluateModels_FoldParallel(
+        smilesBatch, yBatch, kf, macawParams, paramGrids,
+        nJobs, randomState, memoryEfficient
     )
+    
+    printMemoryUsage(f"Batch {batchId} end")
+    gc.collect()
+    
+    return batchResults
+
+
+def mergeBatchResults(batchResultsList):
+    """Merge results from multiple batches"""
+    
+    print(f"\n{'*'*80}")
+    print(f"MERGING RESULTS FROM {len(batchResultsList)} BATCHES")
+    print(f"{'*'*80}")
+    
+    modelNames = list(batchResultsList[0].keys())
+    
+    # Initialize merged results
+    mergedResults = {
+        name: {
+            'trainPred': [], 
+            'trainObs': [], 
+            'testPred': [], 
+            'testObs': [], 
+            'bestParams': []
+        }
+        for name in modelNames
+    }
+    
+    # Merge predictions from all batches
+    for batchResults in batchResultsList:
+        for modelName in modelNames:
+            for key in ['trainPred', 'trainObs', 'testPred', 'testObs']:
+                mergedResults[modelName][key].append(batchResults[modelName][key])
+            
+            # Collect all best params
+            mergedResults[modelName]['bestParams'].extend(batchResults[modelName]['bestParams'])
+    
+    # Concatenate arrays
+    for modelName in modelNames:
+        for key in ['trainPred', 'trainObs', 'testPred', 'testObs']:
+            mergedResults[modelName][key] = np.concatenate(mergedResults[modelName][key])
+    
+    # Report merged sizes
+    for modelName in modelNames:
+        print(f"  {modelName}: {len(mergedResults[modelName]['testPred'])} total predictions")
+    
+    gc.collect()
+    return mergedResults
+
+
+def trainAndEvaluateModels_Batched(smiles, Y, config, macawParams, paramGrids):
+    """
+    Train models using batch processing for large datasets
+    Splits data into batches, processes each batch independently, then merges results
+    """
+    
+    nSamples = len(smiles)
+    batchSize = config['batchSize']
+    nBatches = (nSamples + batchSize - 1) // batchSize
+    
+    print(f"\n{'*'*80}")
+    print(f"BATCH PROCESSING MODE")
+    print(f"{'*'*80}")
+    print(f"Total samples: {nSamples:,}")
+    print(f"Batch size: {batchSize:,}")
+    print(f"Number of batches: {nBatches}")
+    print(f"Parallel jobs per batch: {config['nJobs']}")
+    print(f"CV folds: {config['nFolds']}")
+    print(f"{'*'*80}")
     
     # Initialize KFold
-    kf = KFold(n_splits=args.n_folds, shuffle=True, random_state=args.random_state)
+    kf = KFold(n_splits=config['nFolds'], shuffle=True, random_state=config['randomState'])
     
-    # Get parameter grids
-    param_grids = get_param_grids()
+    # Process each batch
+    batchResultsList = []
     
-    # Run model training and evaluation
-    print("\n" + "-"*80)
-    print("Training and Evaluating Models")
-    print("-"*80)
+    for batchIdx in range(nBatches):
+        startIdx = batchIdx * batchSize
+        endIdx = min(startIdx + batchSize, nSamples)
+        
+        # Extract batch
+        smilesBatch = smiles.iloc[startIdx:endIdx].reset_index(drop=True)
+        yBatch = Y[startIdx:endIdx]
+        
+        print(f"\nBatch {batchIdx + 1}/{nBatches}: Samples {startIdx:,} to {endIdx:,}")
+        
+        # Process this batch
+        batchResults = processBatch(
+            batchIdx + 1, smilesBatch, yBatch, kf, macawParams, paramGrids,
+            config['nJobs'], config['randomState'], config['memoryEfficient']
+        )
+        
+        batchResultsList.append(batchResults)
+        
+        # Clear memory
+        del smilesBatch, yBatch
+        gc.collect()
+        
+        printMemoryUsage(f"after batch {batchIdx + 1}")
     
-    model_results = train_and_evaluate_models(
-        smiles=smiles,
-        Y=Y,
-        kf=kf,
-        mcw=mcw,
-        param_grids=param_grids,
-        n_jobs=args.n_jobs,
-        verbose=True
+    # Merge all batch results
+    mergedResults = mergeBatchResults(batchResultsList)
+    
+    # Clear batch results
+    del batchResultsList
+    gc.collect()
+    
+    return mergedResults
+
+
+# ============================================================================
+# METRICS AND SAVING FUNCTIONS
+# ============================================================================
+
+def calculateMetricsTable(results):
+    """Calculate performance metrics"""
+    metricsData = []
+    modelOrder = ['SVR', 'RandomForest', 'XGBoost', 'NeuralNetwork']
+    
+    for modelName in modelOrder:
+        data = results[modelName]
+        metricsData.append({
+            'Model': modelName,
+            'Train_R2': round(r2_score(data['trainObs'], data['trainPred']), 3),
+            'Train_MAE': round(mean_absolute_error(data['trainObs'], data['trainPred']), 3),
+            'Train_RMSE': round(np.sqrt(mean_squared_error(data['trainObs'], data['trainPred'])), 3),
+            'Test_R2': round(r2_score(data['testObs'], data['testPred']), 3),
+            'Test_MAE': round(mean_absolute_error(data['testObs'], data['testPred']), 3),
+            'Test_RMSE': round(np.sqrt(mean_squared_error(data['testObs'], data['testPred'])), 3)
+        })
+    
+    return pd.DataFrame(metricsData)
+
+
+def saveResults(results, dfMetrics, saveDir, prefix):
+    """Save CV predictions and metrics"""
+    os.makedirs(saveDir, exist_ok=True)
+    
+    dfMetrics.to_csv(os.path.join(saveDir, f'{prefix}_metrics_summary.csv'), index=False)
+    
+    for modelName, data in results.items():
+        # Test predictions (from CV)
+        dfTest = pd.DataFrame({
+            'Observed': data['testObs'],
+            'Predicted': data['testPred'],
+            'Residual': data['testObs'] - data['testPred'],
+            'Absolute_Error': np.abs(data['testObs'] - data['testPred'])
+        })
+        dfTest.to_csv(os.path.join(saveDir, f'{prefix}_predictions_test_{modelName}.csv'), index=False)
+        
+        # Train predictions (from CV)
+        dfTrain = pd.DataFrame({
+            'Observed': data['trainObs'],
+            'Predicted': data['trainPred'],
+            'Residual': data['trainObs'] - data['trainPred'],
+            'Absolute_Error': np.abs(data['trainObs'] - data['trainPred'])
+        })
+        dfTrain.to_csv(os.path.join(saveDir, f'{prefix}_predictions_train_{modelName}.csv'), index=False)
+
+
+def trainAndSaveModel(smiles, Y, modelName, bestParams, macawParams, saveDir, prefix, 
+                      randomState=42, testSize=0.2):
+    """Train a specific model with train/test split and save comprehensive results"""
+    
+    # Split data into train/test
+    indices = np.arange(len(smiles))
+    trainIdx, testIdx = train_test_split(
+        indices, test_size=testSize, random_state=randomState, shuffle=True
     )
     
+    smiTrain = smiles.iloc[trainIdx].tolist()
+    smiTest = smiles.iloc[testIdx].tolist()
+    yTrain = Y[trainIdx]
+    yTest = Y[testIdx]
+    
+    # Create and fit MACAW on training data only
+    mcwFull = MACAW(**macawParams)
+    mcwFull.fit(smiTrain, yTrain)
+    
+    xTrain = mcwFull.transform(smiTrain)
+    xTest = mcwFull.transform(smiTest)
+    
+    # Train model
+    if modelName == 'SVR':
+        finalModel = SVR(**bestParams)
+        finalModel.fit(xTrain, yTrain)
+        trainPred = finalModel.predict(xTrain)
+        testPred = finalModel.predict(xTest)
+        
+    elif modelName == 'RandomForest':
+        finalModel = RandomForestRegressor(**bestParams, random_state=randomState, n_jobs=1)
+        finalModel.fit(xTrain, yTrain)
+        trainPred = finalModel.predict(xTrain)
+        testPred = finalModel.predict(xTest)
+        
+        # Save feature importances
+        featImportance = pd.DataFrame({
+            'Feature': [f'MACAW_{i}' for i in range(xTrain.shape[1])],
+            'Importance': finalModel.feature_importances_
+        }).sort_values('Importance', ascending=False)
+        featImportance.to_csv(
+            os.path.join(saveDir, f'{prefix}_{modelName}_feature_importances.csv'), 
+            index=False
+        )
+        
+    elif modelName == 'XGBoost':
+        finalModel = XGBRegressor(**bestParams, random_state=randomState, 
+                                 tree_method='hist', verbosity=0, n_jobs=1)
+        finalModel.fit(xTrain, yTrain)
+        trainPred = finalModel.predict(xTrain)
+        testPred = finalModel.predict(xTest)
+        
+        # Save feature importances
+        featImportance = pd.DataFrame({
+            'Feature': [f'MACAW_{i}' for i in range(xTrain.shape[1])],
+            'Importance': finalModel.feature_importances_
+        }).sort_values('Importance', ascending=False)
+        featImportance.to_csv(
+            os.path.join(saveDir, f'{prefix}_{modelName}_feature_importances.csv'), 
+            index=False
+        )
+        
+    elif modelName == 'NeuralNetwork':
+        scaler = StandardScaler()
+        xTrainScaled = scaler.fit_transform(xTrain)
+        xTestScaled = scaler.transform(xTest)
+        
+        finalModel = MLPRegressor(**bestParams, random_state=randomState, early_stopping=True)
+        finalModel.fit(xTrainScaled, yTrain)
+        trainPred = finalModel.predict(xTrainScaled)
+        testPred = finalModel.predict(xTestScaled)
+        
+        dump(scaler, os.path.join(saveDir, f'{prefix}_{modelName}_scaler.joblib'))
+    
     # Calculate metrics
-    print("\n" + "-"*80)
-    print("Calculating Metrics")
-    print("-"*80)
-    df_comparison = calculate_metrics_table(model_results)
-    print("\nMetrics summary:")
-    print(df_comparison.to_string(index=False))
+    trainMetrics = {
+        'R2': r2_score(yTrain, trainPred),
+        'MAE': mean_absolute_error(yTrain, trainPred),
+        'RMSE': np.sqrt(mean_squared_error(yTrain, trainPred))
+    }
     
-    # Save results
-    print("\n" + "-"*80)
-    print("Saving Results")
-    print("-"*80)
-    save_results(model_results, df_comparison, args.output_dir)
-    print(f"Results saved to: {args.output_dir}")
+    testMetrics = {
+        'R2': r2_score(yTest, testPred),
+        'MAE': mean_absolute_error(yTest, testPred),
+        'RMSE': np.sqrt(mean_squared_error(yTest, testPred))
+    }
+    
+    # Save TRAIN predictions from full data split
+    dfTrainPred = pd.DataFrame({
+        'SMILES': smiTrain,
+        'Observed': yTrain,
+        'Predicted': trainPred,
+        'Residual': yTrain - trainPred,
+        'Absolute_Error': np.abs(yTrain - trainPred)
+    })
+    dfTrainPred.to_csv(
+        os.path.join(saveDir, f'{prefix}_predictions_fullData_train_{modelName}.csv'), 
+        index=False
+    )
+    
+    # Save TEST predictions from full data split
+    dfTestPred = pd.DataFrame({
+        'SMILES': smiTest,
+        'Observed': yTest,
+        'Predicted': testPred,
+        'Residual': yTest - testPred,
+        'Absolute_Error': np.abs(yTest - testPred)
+    })
+    dfTestPred.to_csv(
+        os.path.join(saveDir, f'{prefix}_predictions_fullData_test_{modelName}.csv'), 
+        index=False
+    )
+    
+    # Prepare metrics summary
+    metrics = {
+        'Model': modelName,
+        'Train_R2': round(trainMetrics['R2'], 4),
+        'Train_MAE': round(trainMetrics['MAE'], 4),
+        'Train_RMSE': round(trainMetrics['RMSE'], 4),
+        'Test_R2': round(testMetrics['R2'], 4),
+        'Test_MAE': round(testMetrics['MAE'], 4),
+        'Test_RMSE': round(testMetrics['RMSE'], 4),
+        'N_train': len(yTrain),
+        'N_test': len(yTest),
+        'Best_Params': str(bestParams)
+    }
+    
+    # Save model and MACAW
+    dump(finalModel, os.path.join(saveDir, f'{prefix}_{modelName}_regr_pred.joblib'))
+    dump(mcwFull, os.path.join(saveDir, f'{prefix}_{modelName}_macaw_model.joblib'))
+    
+    # Clean up
+    del xTrain, xTest, mcwFull, trainPred, testPred
+    gc.collect()
+    
+    return finalModel, metrics
 
-    # Generate plots
+
+def trainAndSaveAllModels(smiles, Y, modelResults, macawParams, saveDir, prefix, 
+                         randomState=42, testSize=0.2):
+    """Train all models on full data with train/test split and save comprehensive results"""
+    modelNames = ['SVR', 'RandomForest', 'XGBoost', 'NeuralNetwork']
+    savedModels = {}
+    fullDataMetrics = []
+    
+    print(f"\n{'*'*80}")
+    print(f"TRAINING FINAL MODELS ON FULL DATASET")
+    print(f"{'*'*80}")
+    print(f"Training on {(1-testSize)*100:.0f}% of data, testing on {testSize*100:.0f}%")
+    
+    for modelName in modelNames:
+        print(f"\nTraining {modelName}...")
+        printMemoryUsage(f"before {modelName}")
+        
+        # Use most common best params from CV
+        bestParamsList = modelResults[modelName]['bestParams']
+        # Simple majority vote for each parameter
+        from collections import Counter
+        bestParams = {}
+        if bestParamsList:
+            for key in bestParamsList[0].keys():
+                values = [params[key] for params in bestParamsList]
+                bestParams[key] = Counter(values).most_common(1)[0][0]
+        
+        finalModel, metrics = trainAndSaveModel(
+            smiles, Y, modelName, bestParams, macawParams, saveDir, prefix, 
+            randomState, testSize
+        )
+        savedModels[modelName] = finalModel
+        fullDataMetrics.append(metrics)
+        
+        printMemoryUsage(f"after {modelName}")
+        gc.collect()
+    
+    # Save full data metrics summary
+    dfFullMetrics = pd.DataFrame(fullDataMetrics)
+    dfFullMetrics.to_csv(
+        os.path.join(saveDir, f'{prefix}_fullData_metrics.csv'), 
+        index=False
+    )
+    
     print("\n" + "="*80)
-    print("Plots")
+    print("FULL DATA HOLDOUT PERFORMANCE")
     print("="*80)
-    create_parity_plots(model_results, args.output_dir)
+    print(dfFullMetrics[['Model', 'Train_R2', 'Train_MAE', 'Test_R2', 'Test_MAE', 'N_train', 'N_test']].to_string(index=False))
     
-    # Generate report
-    report_path = os.path.join(args.output_dir, 'model_comparison_report.txt')
-    report = generate_report(model_results, df_comparison, report_path)
-    print("\n" + "-"*80)
-    print("Report")
-    print("-"*80)
-    print(report)
-    
+    return savedModels, dfFullMetrics
 
-    print(f"All results saved to: {args.output_dir}")
-    end_time = time.time()
-    print(f"Total Runtime: {end_time - start_time: .2f} s")
+
+def generateComprehensiveReport(results, dfMetrics, dfFullMetrics, savePath):
+    """Generate comprehensive summary report including CV and holdout results"""
+    report = []
+    report.append("="*80)
+    report.append("MODEL COMPARISON COMPREHENSIVE REPORT")
+    report.append("="*80)
+    report.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    report.append("")
+    
+    # Cross-validation results
+    report.append("-"*80)
+    report.append("CROSS-VALIDATION RESULTS")
+    report.append("-"*80)
+    bestIdx = dfMetrics['Test_R2'].idxmax()
+    bestModel = dfMetrics.iloc[bestIdx]['Model']
+    bestR2 = dfMetrics.iloc[bestIdx]['Test_R2']
+    
+    report.append(f"Best Model (CV): {bestModel} (Test R² = {bestR2:.3f})")
+    report.append("")
+    report.append("CV Performance Metrics:")
+    report.append(dfMetrics.to_string(index=False))
+    report.append("")
+    
+    report.append("Overfitting Analysis (CV):")
+    for modelName, data in results.items():
+        trainR2 = r2_score(data['trainObs'], data['trainPred'])
+        testR2 = r2_score(data['testObs'], data['testPred'])
+        overfitGap = trainR2 - testR2
+        
+        status = ("Excellent" if overfitGap < 0.05 else "Good" if overfitGap < 0.10 
+                 else "Moderate" if overfitGap < 0.15 else "High overfitting")
+        
+        report.append(f"  {modelName:15s}: Train R²={trainR2:.3f}, Test R²={testR2:.3f}, Gap={overfitGap:.3f} ({status})")
+    
+    # Full data holdout results
+    report.append("")
+    report.append("-"*80)
+    report.append("HOLDOUT VALIDATION RESULTS (Full Data Split)")
+    report.append("-"*80)
+    bestFullIdx = dfFullMetrics['Test_R2'].idxmax()
+    bestFullModel = dfFullMetrics.iloc[bestFullIdx]['Model']
+    bestFullR2 = dfFullMetrics.iloc[bestFullIdx]['Test_R2']
+    
+    report.append(f"Best Model (Holdout): {bestFullModel} (Test R² = {bestFullR2:.4f})")
+    report.append("")
+    report.append("Holdout Performance Metrics:")
+    report.append(dfFullMetrics[['Model', 'Train_R2', 'Train_MAE', 'Train_RMSE', 
+                                  'Test_R2', 'Test_MAE', 'Test_RMSE']].to_string(index=False))
+    report.append("")
+    
+    report.append("Overfitting Analysis (Holdout):")
+    for _, row in dfFullMetrics.iterrows():
+        overfitGap = row['Train_R2'] - row['Test_R2']
+        status = ("Excellent" if overfitGap < 0.05 else "Good" if overfitGap < 0.10 
+                 else "Moderate" if overfitGap < 0.15 else "High overfitting")
+        report.append(f"  {row['Model']:15s}: Train R²={row['Train_R2']:.3f}, Test R²={row['Test_R2']:.3f}, Gap={overfitGap:.3f} ({status})")
+    
+    # Comparison
+    report.append("")
+    report.append("-"*80)
+    report.append("CV vs HOLDOUT COMPARISON")
+    report.append("-"*80)
+    comparison = []
+    for modelName in ['SVR', 'RandomForest', 'XGBoost', 'NeuralNetwork']:
+        cvR2 = dfMetrics[dfMetrics['Model'] == modelName]['Test_R2'].values[0]
+        holdoutR2 = dfFullMetrics[dfFullMetrics['Model'] == modelName]['Test_R2'].values[0]
+        diff = holdoutR2 - cvR2
+        comparison.append(f"  {modelName:15s}: CV Test R²={cvR2:.3f}, Holdout Test R²={holdoutR2:.3f}, Diff={diff:+.3f}")
+    
+    for line in comparison:
+        report.append(line)
+    
+    report.append("")
+    report.append("="*80)
+    
+    fullReport = "\n".join(report)
+    with open(savePath, 'w') as f:
+        f.write(fullReport)
+    
+    return fullReport
+
+
+def main():
+    """Main execution with batch processing support"""
+    startTime = time.time()
+    
+    # Load configuration
+    config = parseArguments()
+    
+    print(f"{'*'*80}")
+    print(f"MULTI-MODEL COMPARISON - BATCH PROCESSING VERSION")
+    print(f"{'*'*80}")
+    print(f"Job started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"")
+    
+    # Validate nJobs
+    maxCores = multiprocessing.cpu_count()
+    if config['nJobs'] > maxCores:
+        print(f"Warning: nJobs ({config['nJobs']}) > available cores ({maxCores}). Using {maxCores}.")
+        config['nJobs'] = maxCores
+    
+    # Load data
+    print(f"{'*'*80}")
+    print("DATA LOADING AND PREPARATION")
+    print(f"{'*'*80}")
+    smiles, Y = loadAndPrepareData(config)
+    
+    # Determine if batching should be used
+    useBatching = config['enableBatching'] and len(smiles) >= config['batchThreshold']
+    
+    if useBatching:
+        print(f"\n  LARGE DATASET DETECTED: {len(smiles):,} samples")
+        print(f"   Batch processing ENABLED (threshold: {config['batchThreshold']:,})")
+        print(f"   Batch size: {config['batchSize']:,}")
+    else:
+        print(f"\n  Dataset size: {len(smiles):,} samples")
+        print(f"   Using standard processing (no batching)")
+    
+    # MACAW parameters
+    macawParams = {
+        'type_fp': config['macawTypeFp'],
+        'metric': config['macawMetric'],
+        'n_components': config['macawNComponents'],
+        'n_landmarks': config['macawNLandmarks'],
+        'random_state': config['randomState']
+    }
+    
+    print(f"\nMACAW Parameters:")
+    for key, value in macawParams.items():
+        print(f"  {key}: {value}")
+    
+    print(f"\nModel Training Configuration:")
+    print(f"  CV Folds: {config['nFolds']}")
+    print(f"  Random State: {config['randomState']}")
+    print(f"  Parallel Jobs: {config['nJobs']}")
+    print(f"  Memory Efficient: {config['memoryEfficient']}")
+    
+    # Get parameter grids
+    paramGrids = getParamGrids()
+    
+    # Train and evaluate models
+    print(f"\n{'*'*80}")
+    print(f"CROSS-VALIDATION TRAINING ({config['nFolds']}-FOLD)")
+    print(f"{'*'*80}")
+    
+    if useBatching:
+        # Use batch processing
+        modelResults = trainAndEvaluateModels_Batched(
+            smiles, Y, config, macawParams, paramGrids
+        )
+    else:
+        # Use standard processing
+        kf = KFold(n_splits=config['nFolds'], shuffle=True, random_state=config['randomState'])
+        modelResults = trainAndEvaluateModels_FoldParallel(
+            smiles, Y, kf, macawParams, paramGrids, 
+            config['nJobs'], config['randomState'], config['memoryEfficient']
+        )
+    
+    # Calculate CV metrics
+    dfComparison = calculateMetricsTable(modelResults)
+    print(f"\n{'*'*80}")
+    print("CV METRICS SUMMARY")
+    print(f"{'*'*80}")
+    print(dfComparison.to_string(index=False))
+    
+    # Save CV results
+    saveResults(modelResults, dfComparison, config['outputDir'], config['filePrefix'])
+    print(f"\nCV results saved to: {config['outputDir']}")
+    
+    # Train and save ALL models on full dataset WITH HOLDOUT SPLIT
+    savedModels, dfFullMetrics = trainAndSaveAllModels(
+        smiles, Y, modelResults, macawParams, 
+        config['outputDir'], config['filePrefix'], 
+        config['randomState'], config['testSize']
+    )
+    
+    # Generate comprehensive report
+    reportPath = os.path.join(config['outputDir'], f'{config["filePrefix"]}_comprehensive_report.txt')
+    report = generateComprehensiveReport(modelResults, dfComparison, dfFullMetrics, reportPath)
+    print(f"\n{report}")
+    
+    # Final summary
+    print(f"\n{'*'*80}")
+    print("SAVED FILES SUMMARY")
+    print(f"{'*'*80}")
+    
+    print("\n1. MODELS (.joblib files):")
+    for modelName in ['SVR', 'RandomForest', 'XGBoost', 'NeuralNetwork']:
+        print(f"   {config['filePrefix']}_{modelName}_regr_pred.joblib")
+        print(f"   {config['filePrefix']}_{modelName}_macaw_model.joblib")
+        if modelName == 'NeuralNetwork':
+            print(f"   {config['filePrefix']}_{modelName}_scaler.joblib")
+    
+    print("\n2. CROSS-VALIDATION PREDICTIONS:")
+    print(f"   {config['filePrefix']}_predictions_test_*.csv")
+    print(f"   {config['filePrefix']}_predictions_train_*.csv")
+    
+    print("\n3. HOLDOUT VALIDATION PREDICTIONS:")
+    print(f"   {config['filePrefix']}_predictions_fullData_train_*.csv")
+    print(f"   {config['filePrefix']}_predictions_fullData_test_*.csv")
+    
+    print("\n4. METRICS:")
+    print(f"   {config['filePrefix']}_metrics_summary.csv")
+    print(f"   {config['filePrefix']}_fullData_metrics.csv")
+    
+    print("\n5. FEATURE IMPORTANCES:")
+    print(f"   {config['filePrefix']}_RandomForest_feature_importances.csv")
+    print(f"   {config['filePrefix']}_XGBoost_feature_importances.csv")
+    
+    print("\n6. COMPREHENSIVE REPORT:")
+    print(f"   {config['filePrefix']}_comprehensive_report.txt")
+    
+    elapsed = time.time() - startTime
+    print(f"\n{'*'*80}")
+    print(f"COMPLETED in {elapsed:.1f}s ({elapsed/60:.1f} minutes)")
+    print(f"All results saved to: {config['outputDir']}")
+    printMemoryUsage("final")
+    print(f"{'*'*80}")
 
 
 if __name__ == "__main__":
