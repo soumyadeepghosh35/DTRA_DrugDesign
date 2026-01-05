@@ -57,9 +57,9 @@ from macaw import MACAW
 
 DEFAULT_CONFIG = {
     # Input/Output paths
-    'inputFile': '/users/sghosh6/DTRA_project/MACAW/DrugDesignData/modelBuildingData/allvirusData_chEMBL_noDuplicates_MLready.csv',
-    'outputDir': '/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/virusCommandline_10fold/wDuplicates_fineGrid/',
-    'filePrefix': 'noDuplicates',
+    'inputFile': '/users/sghosh6/DTRA_project/MACAW/DrugDesignData/modelBuildingData/allVirusData_combined_MLready.csv',
+    'outputDir': '/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/AllVirus_CombinedDataBase/',
+    'filePrefix': 'wDuplicates',
     
     # Data columns
     'smilesColumn': 'Smiles',
@@ -70,7 +70,7 @@ DEFAULT_CONFIG = {
     'nFolds': 10,
     'randomState': 42,
     'nJobs': 4,
-    'nSamples': None,
+    'nSamples': 100,
     'testSize': 0.2,
     
     # MACAW parameters
@@ -452,9 +452,9 @@ def processBatch(batchId, smilesBatch, yBatch, kf, macawParams, paramGrids,
                  nJobs, randomState, memoryEfficient):
     """Process a single batch of data through CV"""
     
-    print(f"\n{'*'*80}")
+    print(f"\n{'-'*80}")
     print(f"BATCH {batchId}: Processing {len(smilesBatch)} samples")
-    print(f"{'*'*80}")
+    print(f"{'-'*80}")
     printMemoryUsage(f"Batch {batchId} start")
     
     # Run CV on this batch
@@ -472,9 +472,9 @@ def processBatch(batchId, smilesBatch, yBatch, kf, macawParams, paramGrids,
 def mergeBatchResults(batchResultsList):
     """Merge results from multiple batches"""
     
-    print(f"\n{'*'*80}")
+    print(f"\n{'-'*80}")
     print(f"MERGING RESULTS FROM {len(batchResultsList)} BATCHES")
-    print(f"{'*'*80}")
+    print(f"{'-'*80}")
     
     modelNames = list(batchResultsList[0].keys())
     
@@ -522,15 +522,15 @@ def trainAndEvaluateModels_Batched(smiles, Y, config, macawParams, paramGrids):
     batchSize = config['batchSize']
     nBatches = (nSamples + batchSize - 1) // batchSize
     
-    print(f"\n{'*'*80}")
+    print(f"\n{'-'*80}")
     print(f"BATCH PROCESSING MODE")
-    print(f"{'*'*80}")
+    print(f"{'-'*80}")
     print(f"Total samples: {nSamples:,}")
     print(f"Batch size: {batchSize:,}")
     print(f"Number of batches: {nBatches}")
     print(f"Parallel jobs per batch: {config['nJobs']}")
     print(f"CV folds: {config['nFolds']}")
-    print(f"{'*'*80}")
+    print(f"{'-'*80}")
     
     # Initialize KFold
     kf = KFold(n_splits=config['nFolds'], shuffle=True, random_state=config['randomState'])
@@ -767,9 +767,9 @@ def trainAndSaveAllModels(smiles, Y, modelResults, macawParams, saveDir, prefix,
     savedModels = {}
     fullDataMetrics = []
     
-    print(f"\n{'*'*80}")
+    print(f"\n{'-'*80}")
     print(f"TRAINING FINAL MODELS ON FULL DATASET")
-    print(f"{'*'*80}")
+    print(f"{'-'*80}")
     print(f"Training on {(1-testSize)*100:.0f}% of data, testing on {testSize*100:.0f}%")
     
     for modelName in modelNames:
@@ -900,9 +900,9 @@ def main():
     # Load configuration
     config = parseArguments()
     
-    print(f"{'*'*80}")
-    print(f"MULTI-MODEL COMPARISON - BATCH PROCESSING VERSION")
-    print(f"{'*'*80}")
+    print(f"{'-'*80}")
+    print(f"Multi ML-model Comparison")
+    print(f"{'-'*80}")
     print(f"Job started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"")
     
@@ -913,9 +913,9 @@ def main():
         config['nJobs'] = maxCores
     
     # Load data
-    print(f"{'*'*80}")
-    print("DATA LOADING AND PREPARATION")
-    print(f"{'*'*80}")
+    print(f"{'-'*80}")
+    print("Data preparation")
+    print(f"{'-'*80}")
     smiles, Y = loadAndPrepareData(config)
     
     # Determine if batching should be used
@@ -952,9 +952,9 @@ def main():
     paramGrids = getParamGrids()
     
     # Train and evaluate models
-    print(f"\n{'*'*80}")
-    print(f"CROSS-VALIDATION TRAINING ({config['nFolds']}-FOLD)")
-    print(f"{'*'*80}")
+    print(f"\n{'-'*80}")
+    print(f"Cross-validation training ({config['nFolds']}-fold)")
+    print(f"{'-'*80}")
     
     if useBatching:
         # Use batch processing
@@ -971,9 +971,9 @@ def main():
     
     # Calculate CV metrics
     dfComparison = calculateMetricsTable(modelResults)
-    print(f"\n{'*'*80}")
-    print("CV METRICS SUMMARY")
-    print(f"{'*'*80}")
+    print(f"\n{'-'*80}")
+    print("CV Metrics Summary")
+    print(f"{'-'*80}")
     print(dfComparison.to_string(index=False))
     
     # Save CV results
@@ -993,9 +993,9 @@ def main():
     print(f"\n{report}")
     
     # Final summary
-    print(f"\n{'*'*80}")
-    print("SAVED FILES SUMMARY")
-    print(f"{'*'*80}")
+    print(f"\n{'-'*80}")
+    print("Files Summary")
+    print(f"{'-'*80}")
     
     print("\n1. MODELS (.joblib files):")
     for modelName in ['SVR', 'RandomForest', 'XGBoost', 'NeuralNetwork']:
@@ -1024,11 +1024,11 @@ def main():
     print(f"   {config['filePrefix']}_comprehensive_report.txt")
     
     elapsed = time.time() - startTime
-    print(f"\n{'*'*80}")
+    print(f"\n{'-'*80}")
     print(f"COMPLETED in {elapsed:.1f}s ({elapsed/60:.1f} minutes)")
     print(f"All results saved to: {config['outputDir']}")
     printMemoryUsage("final")
-    print(f"{'*'*80}")
+    print(f"{'-'*80}")
 
 
 if __name__ == "__main__":
