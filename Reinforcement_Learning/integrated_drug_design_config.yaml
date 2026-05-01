@@ -1,0 +1,178 @@
+# Integrated DTRA antiviral drug-design pipeline config
+# Run:
+#   python runIntegratedDrugDesignPipeline.py integrated_drug_design_config.yaml
+
+jobName: "combinedEbolaVirusData_allDB"
+randomSeed: 42
+
+outputDir: "/users/sghosh6/DTRA_project/MACAW/DrugDesignData/ReinforcementLearning_results"
+
+trainingData:
+  # Cleaned ML-ready training data from the MACAW notebook.
+  inputCsv: "/mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/modelBuildingData/combinedEbolaVirusData_allDB_MLready.csv"
+  smilesCol: "Smiles"
+  responseCol: "pPotency"
+  compoundIdCol: "compound_id"
+  strainCol: "StrainClassifier"
+
+  # Remove non-physical or extreme pPotency values.
+  minPotency: 0.0
+  maxPotency: 12.0
+
+  # Set to an integer for test runs.
+  limitRows: null
+
+macaw:
+  # Add the MACAW package/source path here if it is not already on PYTHONPATH.
+  pythonPaths:
+    - "/users/sghosh6/DTRA_project/MACAW"
+
+  useExistingTransformer: false
+  transformerPath: "combinedEbolaVirusData_allDB_MACAW_transformer.joblib"
+
+  typeFp: "atompairs"
+  metric: "sokal"
+  nComponents: 60
+  nLandmarks: 1000
+
+art:
+  # Add AutomatedRecommendationTool path here if it is not already on PYTHONPATH.
+  pythonPaths:
+    - "/users/sghosh6/DTRA_project/MACAW/AutomatedRecommendationTool"
+
+  # Set true if art.cpkl already exists and you only want to load it.
+  useExistingModel: false
+  saveModel: true
+  modelFile: "art.cpkl"
+
+  artReadyCsv: "combinedEbolaVirusData_allDB_wMACAW_ARTready.csv"
+
+  # ART training settings.
+  objective: "maximize"
+  threshold: 0.2
+  alpha: 0.25
+  numRecommendations: 10
+  maxMcmcCores: 16
+  generateRecommendations: false
+  runCrossValidation: true
+  numTpotModels: 2
+
+  # Important:
+  # This follows the Step5 ART notebook pattern:
+  #   meanVals, stdVals = artModel.post_pred_stats(MACAW_feature_matrix)
+  predictionMethod: "post_pred_stats"
+  predictionChunkSize: 100000
+
+doranet:
+  # Option A:
+  #   enabled: true
+  #   The script will run DORAnet directly.
+  #
+  # Option B:
+  #   enabled: false
+  #   The script will read generatedMoleculesCsv from an existing DORAnet run.
+  enabled: false
+
+  pythonPath: "/users/sghosh6/DTRA_project/MACAW/doranet"
+
+  generatedMoleculesCsv: "/mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/DORAnet_molecules/Ebola_allDORAnetGenerated_Antivirals.csv"
+  smilesCol: "SMILES"
+
+  gen: 3
+  direction: "forward"
+  ruleset: "JN3604IMT"
+
+  maxAtoms:
+    C: 41
+    N: 9
+    O: 12
+    S: 0
+
+  helpers:
+    - "O"
+    - "O=O"
+    - "[H][H]"
+    - "O=C=O"
+    - "C=O"
+    - "[C-]#[O+]"
+    - "Br"
+    - "[Br][Br]"
+    - "CO"
+    - "C=C"
+    - "O=S(O)O"
+    - "N"
+    - "O=S(=O)(O)O"
+    - "O=NO"
+    - "N#N"
+    - "O=[N+]([O-])O"
+    - "NO"
+    - "C#N"
+    - "S"
+    - "O=S=O"
+    - "N#CO"
+
+  runPostProcessing: false
+
+  starterSets:
+    - name: "RemdesivirOnly"
+      starters:
+        - "CCC(CC)COC(=O)[C@H](C)N[P@](=O)(OC[C@@H]1[C@H]([C@H]([C@](O1)(C#N)C2=CC=C3N2N=CN=C3N)O)O)OC4=CC=CC=C4"
+
+candidateFiltering:
+  removeTrainingSmiles: true
+
+  # Set to 100 or 1000 for a small test run first.
+  limitGeneratedRows: null
+
+  # Optional DORA-XGB feasibility filter.
+  # Leave null to skip this filter.
+  doraXgbFeasibilityCsv: null
+  feasibilitySmilesCol: "SMILES"
+  feasibilityColumn: "feasibilityScore_rule1"
+  feasibilityThreshold: 1.0
+
+admet:
+  # Local ADMET-AI prediction:
+  #   ADMETModel().predict(smiles=[...])
+  batchSize: 500
+
+  resumeFromCheckpoint: true
+  checkpointCsv: "generated_admet_ai_checkpoint.csv"
+  outputCsv: "generated_wPotency_wADMET.csv"
+
+  # Set true to reuse a previously computed ADMET CSV.
+  reuseExistingAdmetCsv: false
+  existingAdmetCsv: null
+
+scoring:
+  # Must contain:
+  #   SMILES
+  #   pPotency_prediction
+  #   ADMET-AI endpoint columns
+  #
+  # This is the FDA-approved antiviral reference set used for percentile/desirability scoring.
+  referenceCsv: "/mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB/combinedEbolaVirusData_FDA_approved_Antivirals_ARTprediction_wToxicity.csv"
+  referenceSmilesCol: "SMILES"
+
+  # Leave null to use default endpoint grouping inside the Python script.
+  endpointMeta: null
+
+pareto:
+  topN: 50
+
+  # For very large libraries, this avoids O(N^2) Pareto sorting on the full chemical space.
+  # Set null if you want to Pareto-sort every scored molecule.
+  candidateLimitBeforePareto: 5000
+
+  objectiveCols:
+    - "pPotency_prediction"
+    - "CoreToxicityScore"
+    - "ADMEFeasibility"
+
+  # pPotency: maximize
+  # CoreToxicityScore: minimize
+  # ADMEFeasibility: maximize
+  maximize:
+    - true
+    - false
+    - true

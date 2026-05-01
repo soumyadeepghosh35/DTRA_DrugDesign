@@ -1,0 +1,5 @@
+admet-ai==2.0.1
+doranet==0.5.7a1
+stable-baselines3==2.8.0
+gymnasium==1.2.3
+tensorboard==2.20.0
