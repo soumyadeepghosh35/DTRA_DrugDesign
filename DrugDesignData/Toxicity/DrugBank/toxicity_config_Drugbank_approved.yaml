@@ -1,0 +1,28 @@
+dataDir: .
+artResultsSubdir: ""
+
+inputFile: drugbank_approved_structure_links.csv
+
+# Set to null to process full file
+selectSMILES: null
+
+diversityChunkSize: 1000
+saveEveryBatch: true
+batchSize: 500
+saveEveryBatch: true
+resumeFromCheckpoint: true
+deduplicateSmiles: true
+
+# Diversity filtering
+enableDiversityFilter: true
+similarityThreshold: 1
+fingerprintRadius: 2
+fingerprintBits: 2048
+saveDiversityFilteredInput: true
+diversityOutputSuffix: _diverseInput
+
+outputSuffix: _wToxicity
+
+smilesColumn: SMILES
+requiredInputColumns:
+  - SMILES

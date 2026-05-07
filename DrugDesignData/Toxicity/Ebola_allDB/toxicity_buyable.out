@@ -1,0 +1,365 @@
+
+================ Toxicity Prediction Run ================
+inputFile               : combinedEbolaVirus_all_Buyable_AntiVirals_ARTprediction.csv
+ARTresultsDir           : /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB/
+Input CSV               : /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB/combinedEbolaVirus_all_Buyable_AntiVirals_ARTprediction.csv
+Output CSV              : /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB/combinedEbolaVirus_all_Buyable_AntiVirals_ARTprediction_wToxicity.csv
+Checkpoint CSV          : /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB/combinedEbolaVirus_all_Buyable_AntiVirals_ARTprediction_wToxicity_checkpoint.csv
+selectSMILES            : None
+batchSize               : 500
+saveEveryBatch          : True
+resumeFromCheckpoint    : True
+deduplicateSmiles       : True
+enableDiversityFilter   : True
+similarityThreshold     : 0.75
+fingerprintRadius       : 2
+fingerprintBits         : 2048
+diversityChunkSize      : 1000
+saveDiversityFiltered   : True
+useCanonicalFiltering   : True
+=========================================================
+
+Loaded input dataframe shape: (113185, 8)
+
+Applying chemical diversity filter before ADMET prediction...
+Diversity chunk 1 | processed unique SMILES: 1000/113185 | new selected: 915 | total selected: 915
+Diversity chunk 2 | processed unique SMILES: 2000/113185 | new selected: 834 | total selected: 1749
+Diversity chunk 3 | processed unique SMILES: 3000/113185 | new selected: 760 | total selected: 2509
+Diversity chunk 4 | processed unique SMILES: 4000/113185 | new selected: 909 | total selected: 3418
+Diversity chunk 5 | processed unique SMILES: 5000/113185 | new selected: 853 | total selected: 4271
+Diversity chunk 6 | processed unique SMILES: 6000/113185 | new selected: 884 | total selected: 5155
+Diversity chunk 7 | processed unique SMILES: 7000/113185 | new selected: 860 | total selected: 6015
+Diversity chunk 8 | processed unique SMILES: 8000/113185 | new selected: 810 | total selected: 6825
+Diversity chunk 9 | processed unique SMILES: 9000/113185 | new selected: 796 | total selected: 7621
+Diversity chunk 10 | processed unique SMILES: 10000/113185 | new selected: 798 | total selected: 8419
+Diversity chunk 11 | processed unique SMILES: 11000/113185 | new selected: 793 | total selected: 9212
+Diversity chunk 12 | processed unique SMILES: 12000/113185 | new selected: 795 | total selected: 10007
+Diversity chunk 13 | processed unique SMILES: 13000/113185 | new selected: 763 | total selected: 10770
+Diversity chunk 14 | processed unique SMILES: 14000/113185 | new selected: 794 | total selected: 11564
+Diversity chunk 15 | processed unique SMILES: 15000/113185 | new selected: 741 | total selected: 12305
+Diversity chunk 16 | processed unique SMILES: 16000/113185 | new selected: 706 | total selected: 13011
+Diversity chunk 17 | processed unique SMILES: 17000/113185 | new selected: 715 | total selected: 13726
+Diversity chunk 18 | processed unique SMILES: 18000/113185 | new selected: 687 | total selected: 14413
+Diversity chunk 19 | processed unique SMILES: 19000/113185 | new selected: 688 | total selected: 15101
+Diversity chunk 20 | processed unique SMILES: 20000/113185 | new selected: 644 | total selected: 15745
+Diversity chunk 21 | processed unique SMILES: 21000/113185 | new selected: 642 | total selected: 16387
+Diversity chunk 22 | processed unique SMILES: 22000/113185 | new selected: 700 | total selected: 17087
+Diversity chunk 23 | processed unique SMILES: 23000/113185 | new selected: 637 | total selected: 17724
+Diversity chunk 24 | processed unique SMILES: 24000/113185 | new selected: 621 | total selected: 18345
+Diversity chunk 25 | processed unique SMILES: 25000/113185 | new selected: 595 | total selected: 18940
+Diversity chunk 26 | processed unique SMILES: 26000/113185 | new selected: 617 | total selected: 19557
+Diversity chunk 27 | processed unique SMILES: 27000/113185 | new selected: 626 | total selected: 20183
+Diversity chunk 28 | processed unique SMILES: 28000/113185 | new selected: 631 | total selected: 20814
+Diversity chunk 29 | processed unique SMILES: 29000/113185 | new selected: 671 | total selected: 21485
+Diversity chunk 30 | processed unique SMILES: 30000/113185 | new selected: 605 | total selected: 22090
+Diversity chunk 31 | processed unique SMILES: 31000/113185 | new selected: 536 | total selected: 22626
+Diversity chunk 32 | processed unique SMILES: 32000/113185 | new selected: 528 | total selected: 23154
+Diversity chunk 33 | processed unique SMILES: 33000/113185 | new selected: 525 | total selected: 23679
+Diversity chunk 34 | processed unique SMILES: 34000/113185 | new selected: 564 | total selected: 24243
+Diversity chunk 35 | processed unique SMILES: 35000/113185 | new selected: 536 | total selected: 24779
+Diversity chunk 36 | processed unique SMILES: 36000/113185 | new selected: 544 | total selected: 25323
+Diversity chunk 37 | processed unique SMILES: 37000/113185 | new selected: 519 | total selected: 25842
+Diversity chunk 38 | processed unique SMILES: 38000/113185 | new selected: 505 | total selected: 26347
+Diversity chunk 39 | processed unique SMILES: 39000/113185 | new selected: 549 | total selected: 26896
+Diversity chunk 40 | processed unique SMILES: 40000/113185 | new selected: 533 | total selected: 27429
+Diversity chunk 41 | processed unique SMILES: 41000/113185 | new selected: 507 | total selected: 27936
+Diversity chunk 42 | processed unique SMILES: 42000/113185 | new selected: 473 | total selected: 28409
+Diversity chunk 43 | processed unique SMILES: 43000/113185 | new selected: 486 | total selected: 28895
+Diversity chunk 44 | processed unique SMILES: 44000/113185 | new selected: 435 | total selected: 29330
+Diversity chunk 45 | processed unique SMILES: 45000/113185 | new selected: 485 | total selected: 29815
+Diversity chunk 46 | processed unique SMILES: 46000/113185 | new selected: 528 | total selected: 30343
+Diversity chunk 47 | processed unique SMILES: 47000/113185 | new selected: 526 | total selected: 30869
+Diversity chunk 48 | processed unique SMILES: 48000/113185 | new selected: 535 | total selected: 31404
+Diversity chunk 49 | processed unique SMILES: 49000/113185 | new selected: 699 | total selected: 32103
+Diversity chunk 50 | processed unique SMILES: 50000/113185 | new selected: 890 | total selected: 32993
+Diversity chunk 51 | processed unique SMILES: 51000/113185 | new selected: 841 | total selected: 33834
+Diversity chunk 52 | processed unique SMILES: 52000/113185 | new selected: 778 | total selected: 34612
+Diversity chunk 53 | processed unique SMILES: 53000/113185 | new selected: 799 | total selected: 35411
+Diversity chunk 54 | processed unique SMILES: 54000/113185 | new selected: 570 | total selected: 35981
+Diversity chunk 55 | processed unique SMILES: 55000/113185 | new selected: 745 | total selected: 36726
+Diversity chunk 56 | processed unique SMILES: 56000/113185 | new selected: 636 | total selected: 37362
+Diversity chunk 57 | processed unique SMILES: 57000/113185 | new selected: 686 | total selected: 38048
+Diversity chunk 58 | processed unique SMILES: 58000/113185 | new selected: 596 | total selected: 38644
+Diversity chunk 59 | processed unique SMILES: 59000/113185 | new selected: 560 | total selected: 39204
+Diversity chunk 60 | processed unique SMILES: 60000/113185 | new selected: 551 | total selected: 39755
+Diversity chunk 61 | processed unique SMILES: 61000/113185 | new selected: 542 | total selected: 40297
+Diversity chunk 62 | processed unique SMILES: 62000/113185 | new selected: 596 | total selected: 40893
+Diversity chunk 63 | processed unique SMILES: 63000/113185 | new selected: 551 | total selected: 41444
+Diversity chunk 64 | processed unique SMILES: 64000/113185 | new selected: 506 | total selected: 41950
+Diversity chunk 65 | processed unique SMILES: 65000/113185 | new selected: 457 | total selected: 42407
+Diversity chunk 66 | processed unique SMILES: 66000/113185 | new selected: 521 | total selected: 42928
+Diversity chunk 67 | processed unique SMILES: 67000/113185 | new selected: 419 | total selected: 43347
+Diversity chunk 68 | processed unique SMILES: 68000/113185 | new selected: 478 | total selected: 43825
+Diversity chunk 69 | processed unique SMILES: 69000/113185 | new selected: 399 | total selected: 44224
+Diversity chunk 70 | processed unique SMILES: 70000/113185 | new selected: 548 | total selected: 44772
+Diversity chunk 71 | processed unique SMILES: 71000/113185 | new selected: 376 | total selected: 45148
+Diversity chunk 72 | processed unique SMILES: 72000/113185 | new selected: 374 | total selected: 45522
+Diversity chunk 73 | processed unique SMILES: 73000/113185 | new selected: 400 | total selected: 45922
+Diversity chunk 74 | processed unique SMILES: 74000/113185 | new selected: 359 | total selected: 46281
+Diversity chunk 75 | processed unique SMILES: 75000/113185 | new selected: 432 | total selected: 46713
+Diversity chunk 76 | processed unique SMILES: 76000/113185 | new selected: 385 | total selected: 47098
+Diversity chunk 77 | processed unique SMILES: 77000/113185 | new selected: 426 | total selected: 47524
+Diversity chunk 78 | processed unique SMILES: 78000/113185 | new selected: 407 | total selected: 47931
+Diversity chunk 79 | processed unique SMILES: 79000/113185 | new selected: 510 | total selected: 48441
+Diversity chunk 80 | processed unique SMILES: 80000/113185 | new selected: 536 | total selected: 48977
+Diversity chunk 81 | processed unique SMILES: 81000/113185 | new selected: 570 | total selected: 49547
+Diversity chunk 82 | processed unique SMILES: 82000/113185 | new selected: 625 | total selected: 50172
+Diversity chunk 83 | processed unique SMILES: 83000/113185 | new selected: 635 | total selected: 50807
+Diversity chunk 84 | processed unique SMILES: 84000/113185 | new selected: 549 | total selected: 51356
+Diversity chunk 85 | processed unique SMILES: 85000/113185 | new selected: 395 | total selected: 51751
+Diversity chunk 86 | processed unique SMILES: 86000/113185 | new selected: 474 | total selected: 52225
+Diversity chunk 87 | processed unique SMILES: 87000/113185 | new selected: 613 | total selected: 52838
+Diversity chunk 88 | processed unique SMILES: 88000/113185 | new selected: 618 | total selected: 53456
+Diversity chunk 89 | processed unique SMILES: 89000/113185 | new selected: 370 | total selected: 53826
+Diversity chunk 90 | processed unique SMILES: 90000/113185 | new selected: 514 | total selected: 54340
+Diversity chunk 91 | processed unique SMILES: 91000/113185 | new selected: 569 | total selected: 54909
+Diversity chunk 92 | processed unique SMILES: 92000/113185 | new selected: 410 | total selected: 55319
+Diversity chunk 93 | processed unique SMILES: 93000/113185 | new selected: 350 | total selected: 55669
+Diversity chunk 94 | processed unique SMILES: 94000/113185 | new selected: 407 | total selected: 56076
+Diversity chunk 95 | processed unique SMILES: 95000/113185 | new selected: 380 | total selected: 56456
+Diversity chunk 96 | processed unique SMILES: 96000/113185 | new selected: 450 | total selected: 56906
+Diversity chunk 97 | processed unique SMILES: 97000/113185 | new selected: 392 | total selected: 57298
+Diversity chunk 98 | processed unique SMILES: 98000/113185 | new selected: 351 | total selected: 57649
+Diversity chunk 99 | processed unique SMILES: 99000/113185 | new selected: 314 | total selected: 57963
+Diversity chunk 100 | processed unique SMILES: 100000/113185 | new selected: 317 | total selected: 58280
+Diversity chunk 101 | processed unique SMILES: 101000/113185 | new selected: 377 | total selected: 58657
+Diversity chunk 102 | processed unique SMILES: 102000/113185 | new selected: 433 | total selected: 59090
+Diversity chunk 103 | processed unique SMILES: 103000/113185 | new selected: 299 | total selected: 59389
+Diversity chunk 104 | processed unique SMILES: 104000/113185 | new selected: 358 | total selected: 59747
+Diversity chunk 105 | processed unique SMILES: 105000/113185 | new selected: 327 | total selected: 60074
+Diversity chunk 106 | processed unique SMILES: 106000/113185 | new selected: 278 | total selected: 60352
+Diversity chunk 107 | processed unique SMILES: 107000/113185 | new selected: 199 | total selected: 60551
+Diversity chunk 108 | processed unique SMILES: 108000/113185 | new selected: 440 | total selected: 60991
+Diversity chunk 109 | processed unique SMILES: 109000/113185 | new selected: 326 | total selected: 61317
+Diversity chunk 110 | processed unique SMILES: 110000/113185 | new selected: 347 | total selected: 61664
+Diversity chunk 111 | processed unique SMILES: 111000/113185 | new selected: 289 | total selected: 61953
+Diversity chunk 112 | processed unique SMILES: 112000/113185 | new selected: 390 | total selected: 62343
+Diversity chunk 113 | processed unique SMILES: 113000/113185 | new selected: 293 | total selected: 62636
+Diversity chunk 114 | processed unique SMILES: 113185/113185 | new selected: 73 | total selected: 62709
+Original unique valid molecules: 113185
+Diversity-filtered molecules: 62709
+Filtered input dataframe shape: (62709, 8)
+Saved diversity-filtered input to: /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB/combinedEbolaVirus_all_Buyable_AntiVirals_ARTprediction_diverseInput.csv
+Unique SMILES for prediction: 62709
+Remaining SMILES to process: 62709
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Processed batch 1/126 | batch size: 500 | time: 6.48 s
+Processed batch 2/126 | batch size: 500 | time: 5.68 s
+Processed batch 3/126 | batch size: 500 | time: 4.62 s
+Processed batch 4/126 | batch size: 500 | time: 5.68 s
+Processed batch 5/126 | batch size: 500 | time: 5.53 s
+Processed batch 6/126 | batch size: 500 | time: 5.73 s
+Processed batch 7/126 | batch size: 500 | time: 5.70 s
+Processed batch 8/126 | batch size: 500 | time: 6.02 s
+Processed batch 9/126 | batch size: 500 | time: 5.87 s
+Processed batch 10/126 | batch size: 500 | time: 6.26 s
+Processed batch 11/126 | batch size: 500 | time: 6.33 s
+Processed batch 12/126 | batch size: 500 | time: 6.35 s
+Processed batch 13/126 | batch size: 500 | time: 6.66 s
+Processed batch 14/126 | batch size: 500 | time: 6.15 s
+Processed batch 15/126 | batch size: 500 | time: 5.55 s
+Processed batch 16/126 | batch size: 500 | time: 6.17 s
+Processed batch 17/126 | batch size: 500 | time: 6.43 s
+Processed batch 18/126 | batch size: 500 | time: 6.75 s
+Processed batch 19/126 | batch size: 500 | time: 7.27 s
+Processed batch 20/126 | batch size: 500 | time: 6.76 s
+Processed batch 21/126 | batch size: 500 | time: 6.67 s
+Processed batch 22/126 | batch size: 500 | time: 6.66 s
+Processed batch 23/126 | batch size: 500 | time: 7.07 s
+Processed batch 24/126 | batch size: 500 | time: 6.70 s
+Processed batch 25/126 | batch size: 500 | time: 7.76 s
+Processed batch 26/126 | batch size: 500 | time: 7.43 s
+Processed batch 27/126 | batch size: 500 | time: 6.50 s
+Processed batch 28/126 | batch size: 500 | time: 7.38 s
+Processed batch 29/126 | batch size: 500 | time: 8.40 s
+Processed batch 30/126 | batch size: 500 | time: 7.64 s
+Processed batch 31/126 | batch size: 500 | time: 7.68 s
+Processed batch 32/126 | batch size: 500 | time: 7.82 s
+Processed batch 33/126 | batch size: 500 | time: 8.13 s
+Processed batch 34/126 | batch size: 500 | time: 8.99 s
+Processed batch 35/126 | batch size: 500 | time: 7.95 s
+Processed batch 36/126 | batch size: 500 | time: 7.87 s
+Processed batch 37/126 | batch size: 500 | time: 8.04 s
+Processed batch 38/126 | batch size: 500 | time: 9.51 s
+Processed batch 39/126 | batch size: 500 | time: 8.99 s
+Processed batch 40/126 | batch size: 500 | time: 9.84 s
+Processed batch 41/126 | batch size: 500 | time: 10.83 s
+Processed batch 42/126 | batch size: 500 | time: 10.75 s
+Processed batch 43/126 | batch size: 500 | time: 12.79 s
+Processed batch 44/126 | batch size: 500 | time: 9.94 s
+Processed batch 45/126 | batch size: 500 | time: 9.82 s
+Processed batch 46/126 | batch size: 500 | time: 9.52 s
+Processed batch 47/126 | batch size: 500 | time: 10.71 s
+Processed batch 48/126 | batch size: 500 | time: 10.48 s
+Processed batch 49/126 | batch size: 500 | time: 12.48 s
+Processed batch 50/126 | batch size: 500 | time: 10.88 s
+Processed batch 51/126 | batch size: 500 | time: 10.64 s
+Processed batch 52/126 | batch size: 500 | time: 10.83 s
+Processed batch 53/126 | batch size: 500 | time: 11.44 s
+Processed batch 54/126 | batch size: 500 | time: 12.50 s
+Processed batch 55/126 | batch size: 500 | time: 11.16 s
+Processed batch 56/126 | batch size: 500 | time: 11.08 s
+Processed batch 57/126 | batch size: 500 | time: 10.86 s
+Processed batch 58/126 | batch size: 500 | time: 11.56 s
+Processed batch 59/126 | batch size: 500 | time: 12.24 s
+Processed batch 60/126 | batch size: 500 | time: 14.85 s
+Processed batch 61/126 | batch size: 500 | time: 11.53 s
+Processed batch 62/126 | batch size: 500 | time: 13.03 s
+Processed batch 63/126 | batch size: 500 | time: 12.27 s
+Processed batch 64/126 | batch size: 500 | time: 11.09 s
+Processed batch 65/126 | batch size: 500 | time: 10.44 s
+Processed batch 66/126 | batch size: 500 | time: 11.85 s
+Processed batch 67/126 | batch size: 500 | time: 15.00 s
+Processed batch 68/126 | batch size: 500 | time: 10.04 s
+Processed batch 69/126 | batch size: 500 | time: 11.12 s
+Processed batch 70/126 | batch size: 500 | time: 10.85 s
+Processed batch 71/126 | batch size: 500 | time: 11.07 s
+Processed batch 72/126 | batch size: 500 | time: 10.97 s
+Processed batch 73/126 | batch size: 500 | time: 10.66 s
+Processed batch 74/126 | batch size: 500 | time: 10.94 s
+Processed batch 75/126 | batch size: 500 | time: 14.26 s
+Processed batch 76/126 | batch size: 500 | time: 11.66 s
+Processed batch 77/126 | batch size: 500 | time: 11.30 s
+Processed batch 78/126 | batch size: 500 | time: 11.03 s
+Processed batch 79/126 | batch size: 500 | time: 11.19 s
+Processed batch 80/126 | batch size: 500 | time: 11.49 s
+Processed batch 81/126 | batch size: 500 | time: 11.50 s
+Processed batch 82/126 | batch size: 500 | time: 11.42 s
+Processed batch 83/126 | batch size: 500 | time: 11.75 s
+Processed batch 84/126 | batch size: 500 | time: 14.51 s
+Processed batch 85/126 | batch size: 500 | time: 11.77 s
+Processed batch 86/126 | batch size: 500 | time: 11.70 s
+Processed batch 87/126 | batch size: 500 | time: 11.75 s
+Processed batch 88/126 | batch size: 500 | time: 11.90 s
+Processed batch 89/126 | batch size: 500 | time: 11.73 s
+Processed batch 90/126 | batch size: 500 | time: 12.29 s
+Processed batch 91/126 | batch size: 500 | time: 12.23 s
+Processed batch 92/126 | batch size: 500 | time: 12.36 s
+Processed batch 93/126 | batch size: 500 | time: 12.37 s
+Processed batch 94/126 | batch size: 500 | time: 12.36 s
+Processed batch 95/126 | batch size: 500 | time: 15.76 s
+Processed batch 96/126 | batch size: 500 | time: 12.90 s
+Processed batch 97/126 | batch size: 500 | time: 11.90 s
+Processed batch 98/126 | batch size: 500 | time: 11.63 s
+Processed batch 99/126 | batch size: 500 | time: 12.30 s
+Processed batch 100/126 | batch size: 500 | time: 12.26 s
+Processed batch 101/126 | batch size: 500 | time: 12.39 s
+Processed batch 102/126 | batch size: 500 | time: 13.47 s
+Processed batch 103/126 | batch size: 500 | time: 12.88 s
+Processed batch 104/126 | batch size: 500 | time: 12.50 s
+Processed batch 105/126 | batch size: 500 | time: 12.80 s
+Processed batch 106/126 | batch size: 500 | time: 16.40 s
+Processed batch 107/126 | batch size: 500 | time: 12.24 s
+Processed batch 108/126 | batch size: 500 | time: 12.83 s
+Processed batch 109/126 | batch size: 500 | time: 12.47 s
+Processed batch 110/126 | batch size: 500 | time: 12.98 s
+Processed batch 111/126 | batch size: 500 | time: 13.29 s
+Processed batch 112/126 | batch size: 500 | time: 13.04 s
+Processed batch 113/126 | batch size: 500 | time: 13.27 s
+Processed batch 114/126 | batch size: 500 | time: 13.15 s
+Processed batch 115/126 | batch size: 500 | time: 13.27 s
+Processed batch 116/126 | batch size: 500 | time: 13.72 s
+Processed batch 117/126 | batch size: 500 | time: 13.50 s
+Processed batch 118/126 | batch size: 500 | time: 13.97 s
+Processed batch 119/126 | batch size: 500 | time: 14.19 s
+Processed batch 120/126 | batch size: 500 | time: 18.58 s
+Processed batch 121/126 | batch size: 500 | time: 14.21 s
+Processed batch 122/126 | batch size: 500 | time: 13.11 s
+Processed batch 123/126 | batch size: 500 | time: 13.40 s
+Processed batch 124/126 | batch size: 500 | time: 14.09 s
+Processed batch 125/126 | batch size: 500 | time: 13.97 s
+Processed batch 126/126 | batch size: 209 | time: 10.89 s
+Final unique predictions: 62709
+Final merged dataframe shape: (62709, 106)
+Saved final output to: /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB/combinedEbolaVirus_all_Buyable_AntiVirals_ARTprediction_wToxicity.csv
+Total runtime: 1714.09 seconds
+

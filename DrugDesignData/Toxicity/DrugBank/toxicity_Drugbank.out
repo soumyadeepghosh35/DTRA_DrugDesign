@@ -1,0 +1,170 @@
+
+================ Toxicity Prediction Run ================
+inputFile               : drugBankDrugDataDF_wSMILES.csv
+smilesColumn            : Canonical_SMILES
+ARTresultsDir           : ./
+Input CSV               : ./drugBankDrugDataDF_wSMILES.csv
+Output CSV              : ./drugBankDrugDataDF_wSMILES_wToxicity.csv
+Checkpoint CSV          : ./drugBankDrugDataDF_wSMILES_wToxicity_checkpoint.csv
+selectSMILES            : None
+batchSize               : 500
+saveEveryBatch          : True
+resumeFromCheckpoint    : True
+deduplicateSmiles       : True
+enableDiversityFilter   : True
+similarityThreshold     : 1.0
+fingerprintRadius       : 2
+fingerprintBits         : 2048
+diversityChunkSize      : 1000
+saveDiversityFiltered   : True
+useCanonicalFiltering   : True
+=========================================================
+
+Loaded input dataframe shape: (14618, 1)
+
+Applying chemical diversity filter before ADMET prediction...
+Diversity chunk 1 | processed unique SMILES: 1000/14604 | new selected: 988 | total selected: 988
+Diversity chunk 2 | processed unique SMILES: 2000/14604 | new selected: 966 | total selected: 1954
+Diversity chunk 3 | processed unique SMILES: 3000/14604 | new selected: 949 | total selected: 2903
+Diversity chunk 4 | processed unique SMILES: 4000/14604 | new selected: 913 | total selected: 3816
+Diversity chunk 5 | processed unique SMILES: 5000/14604 | new selected: 962 | total selected: 4778
+Diversity chunk 6 | processed unique SMILES: 6000/14604 | new selected: 970 | total selected: 5748
+Diversity chunk 7 | processed unique SMILES: 7000/14604 | new selected: 957 | total selected: 6705
+Diversity chunk 8 | processed unique SMILES: 8000/14604 | new selected: 966 | total selected: 7671
+Diversity chunk 9 | processed unique SMILES: 9000/14604 | new selected: 980 | total selected: 8651
+Diversity chunk 10 | processed unique SMILES: 10000/14604 | new selected: 962 | total selected: 9613
+Diversity chunk 11 | processed unique SMILES: 11000/14604 | new selected: 947 | total selected: 10560
+Diversity chunk 12 | processed unique SMILES: 12000/14604 | new selected: 973 | total selected: 11533
+Diversity chunk 13 | processed unique SMILES: 13000/14604 | new selected: 985 | total selected: 12518
+Diversity chunk 14 | processed unique SMILES: 14000/14604 | new selected: 994 | total selected: 13512
+Diversity chunk 15 | processed unique SMILES: 14604/14604 | new selected: 602 | total selected: 14114
+Original unique valid molecules: 14601
+Diversity-filtered molecules: 14114
+Filtered input dataframe shape: (14128, 1)
+Saved diversity-filtered input to: ./drugBankDrugDataDF_wSMILES_diverseInput.csv
+Unique SMILES for prediction: 14114
+Remaining SMILES to process: 14114
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Processed batch 1/29 | batch size: 500 | time: 7.99 s
+Processed batch 2/29 | batch size: 500 | time: 6.98 s
+Processed batch 3/29 | batch size: 500 | time: 6.10 s
+Processed batch 4/29 | batch size: 500 | time: 6.31 s
+Processed batch 5/29 | batch size: 500 | time: 5.62 s
+Processed batch 6/29 | batch size: 500 | time: 6.35 s
+Processed batch 7/29 | batch size: 500 | time: 6.57 s
+Processed batch 8/29 | batch size: 500 | time: 6.01 s
+Processed batch 9/29 | batch size: 500 | time: 9.34 s
+Processed batch 10/29 | batch size: 500 | time: 8.38 s
+Processed batch 11/29 | batch size: 500 | time: 6.60 s
+Processed batch 12/29 | batch size: 500 | time: 6.74 s
+Processed batch 13/29 | batch size: 500 | time: 5.93 s
+Processed batch 14/29 | batch size: 500 | time: 7.11 s
+Processed batch 15/29 | batch size: 500 | time: 7.50 s
+Processed batch 16/29 | batch size: 500 | time: 7.49 s
+Processed batch 17/29 | batch size: 500 | time: 8.26 s
+Processed batch 18/29 | batch size: 500 | time: 7.58 s
+Processed batch 19/29 | batch size: 500 | time: 7.82 s
+Processed batch 20/29 | batch size: 500 | time: 8.39 s
+Processed batch 21/29 | batch size: 500 | time: 8.86 s
+Processed batch 22/29 | batch size: 500 | time: 8.34 s
+Processed batch 23/29 | batch size: 500 | time: 10.74 s
+Processed batch 24/29 | batch size: 500 | time: 10.41 s
+Processed batch 25/29 | batch size: 500 | time: 8.73 s
+Processed batch 26/29 | batch size: 500 | time: 8.88 s
+Processed batch 27/29 | batch size: 500 | time: 7.84 s
+Processed batch 28/29 | batch size: 500 | time: 8.53 s
+Processed batch 29/29 | batch size: 114 | time: 5.58 s
+Final unique predictions: 14114
+Final merged dataframe shape: (14128, 99)
+Saved final output to: ./drugBankDrugDataDF_wSMILES_wToxicity.csv
+Total runtime: 247.45 seconds
+

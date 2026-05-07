@@ -1,0 +1,153 @@
+
+================ Toxicity Prediction Run ================
+inputFile               : combinedEbolaVirusData_InosineSubstructures_DORAnetGenerated_ARTprediction.csv
+ARTresultsDir           : /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW/
+Input CSV               : /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW/combinedEbolaVirusData_InosineSubstructures_DORAnetGenerated_ARTprediction.csv
+Output CSV              : /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW/combinedEbolaVirusData_InosineSubstructures_DORAnetGenerated_ARTprediction_wToxicity.csv
+Checkpoint CSV          : /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW/combinedEbolaVirusData_InosineSubstructures_DORAnetGenerated_ARTprediction_wToxicity_checkpoint.csv
+selectSMILES            : None
+batchSize               : 500
+saveEveryBatch          : True
+resumeFromCheckpoint    : True
+deduplicateSmiles       : True
+enableDiversityFilter   : True
+similarityThreshold     : 0.75
+fingerprintRadius       : 2
+fingerprintBits         : 2048
+diversityChunkSize      : 1000
+saveDiversityFiltered   : True
+useCanonicalFiltering   : True
+=========================================================
+
+Loaded input dataframe shape: (20880, 8)
+
+Applying chemical diversity filter before ADMET prediction...
+Diversity chunk 1 | processed unique SMILES: 1000/20880 | new selected: 156 | total selected: 156
+Diversity chunk 2 | processed unique SMILES: 2000/20880 | new selected: 156 | total selected: 312
+Diversity chunk 3 | processed unique SMILES: 3000/20880 | new selected: 57 | total selected: 369
+Diversity chunk 4 | processed unique SMILES: 4000/20880 | new selected: 127 | total selected: 496
+Diversity chunk 5 | processed unique SMILES: 5000/20880 | new selected: 5 | total selected: 501
+Diversity chunk 6 | processed unique SMILES: 6000/20880 | new selected: 127 | total selected: 628
+Diversity chunk 7 | processed unique SMILES: 7000/20880 | new selected: 307 | total selected: 935
+Diversity chunk 8 | processed unique SMILES: 8000/20880 | new selected: 12 | total selected: 947
+Diversity chunk 9 | processed unique SMILES: 9000/20880 | new selected: 296 | total selected: 1243
+Diversity chunk 10 | processed unique SMILES: 10000/20880 | new selected: 302 | total selected: 1545
+Diversity chunk 11 | processed unique SMILES: 11000/20880 | new selected: 449 | total selected: 1994
+Diversity chunk 12 | processed unique SMILES: 12000/20880 | new selected: 317 | total selected: 2311
+Diversity chunk 13 | processed unique SMILES: 13000/20880 | new selected: 244 | total selected: 2555
+Diversity chunk 14 | processed unique SMILES: 14000/20880 | new selected: 398 | total selected: 2953
+Diversity chunk 15 | processed unique SMILES: 15000/20880 | new selected: 52 | total selected: 3005
+Diversity chunk 16 | processed unique SMILES: 16000/20880 | new selected: 0 | total selected: 3005
+Diversity chunk 17 | processed unique SMILES: 17000/20880 | new selected: 0 | total selected: 3005
+Diversity chunk 18 | processed unique SMILES: 18000/20880 | new selected: 0 | total selected: 3005
+Diversity chunk 19 | processed unique SMILES: 19000/20880 | new selected: 0 | total selected: 3005
+Diversity chunk 20 | processed unique SMILES: 20000/20880 | new selected: 0 | total selected: 3005
+Diversity chunk 21 | processed unique SMILES: 20880/20880 | new selected: 230 | total selected: 3235
+Original unique valid molecules: 20880
+Diversity-filtered molecules: 3235
+Filtered input dataframe shape: (3235, 8)
+Saved diversity-filtered input to: /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW/combinedEbolaVirusData_InosineSubstructures_DORAnetGenerated_ARTprediction_diverseInput.csv
+Unique SMILES for prediction: 3235
+Remaining SMILES to process: 3235
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Loading pretrained parameter "encoder.encoder.0.cached_zero_vector".
+Loading pretrained parameter "encoder.encoder.0.W_i.weight".
+Loading pretrained parameter "encoder.encoder.0.W_h.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.weight".
+Loading pretrained parameter "encoder.encoder.0.W_o.bias".
+Loading pretrained parameter "readout.1.weight".
+Loading pretrained parameter "readout.1.bias".
+Loading pretrained parameter "readout.4.weight".
+Loading pretrained parameter "readout.4.bias".
+Processed batch 1/7 | batch size: 500 | time: 7.12 s
+Processed batch 2/7 | batch size: 500 | time: 6.35 s
+Processed batch 3/7 | batch size: 500 | time: 6.50 s
+Processed batch 4/7 | batch size: 500 | time: 7.23 s
+Processed batch 5/7 | batch size: 500 | time: 7.64 s
+Processed batch 6/7 | batch size: 500 | time: 5.08 s
+Processed batch 7/7 | batch size: 235 | time: 4.25 s
+Final unique predictions: 3235
+Final merged dataframe shape: (3235, 106)
+Saved final output to: /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW/combinedEbolaVirusData_InosineSubstructures_DORAnetGenerated_ARTprediction_wToxicity.csv
+Total runtime: 60.90 seconds
+
