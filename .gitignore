@@ -162,3 +162,5 @@ DrugDesignData/**/*.zip
 DrugDesignData/**/*.safetensors
 DrugDesignData/**/*.msgpack
 DrugDesignData/**/*.pgnet
+DrugDesignData/**/*.pdf
+DrugDesignData/**/*.txt
