@@ -1,2 +1,2 @@
 #python runDORAXGB.py doraxgb_config.yaml > doraxgb.out
-python runDORAnet.py -c config.yaml
+python runDORAnet.py -c config.yaml > DORAnet.out

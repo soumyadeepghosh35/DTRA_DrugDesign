@@ -39,7 +39,7 @@ max_atoms:
     O: 5
     S: 3
 resolved_max_atoms:
-  C: 21
-  N: 8
-  O: 20
+  C: 41
+  N: 14
+  O: 26
   S: 2

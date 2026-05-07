@@ -1,2 +1,0 @@
-SMILES='O=C1NC(=O)C2=C(N1)N([C@@H]1OC[C@]3(CO)O[C@@]13O)C=N2.O=C1C=CN([C@@H]2O[C@H](COP(=O)(O)OP(=O)(O)O[C@H]3O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O)[C@@H](O)[C@H]2O)C(=O)N1>>O=C1NC(=O)C2=C(N1)N([C@@H]1OC[C@]3(CO[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4O)O[C@@]13O)C=N2.O=C1C=CN([C@@H]2O[C@H](COP(=O)(O)OP(=O)(O)O)[C@@H](O)[C@H]2O)C(=O)N1'
-SMILES='O=C1NC(=O)C2=C(N1)N([C@@H]1OC[C@]3(CO[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4O)O[C@@]13O)C=N2>>O=C1NC(=O)C2=C(N1)N([C@@H]1OC[C@]3(CO[C@H]4O[C@@H]4[C@@H](O)[C@H](O)[C@H](O)CO)O[C@@]13O)C=N2'

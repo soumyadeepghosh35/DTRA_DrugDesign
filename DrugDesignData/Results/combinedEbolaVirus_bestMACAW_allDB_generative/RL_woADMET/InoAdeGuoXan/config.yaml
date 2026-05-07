@@ -52,7 +52,7 @@ macaw:
   transformer_path: ../../combinedEbolaVirusData_allDB_MACAW_transformer.joblib
 
 art:
-  model_path: ../../ART_MACAW/art.cpkl
+  model_path: ../../ART_MACAW/ART_results/art.cpkl
   output_dir: .
   input_feature_prefix: MACAW_
 
@@ -86,17 +86,18 @@ rl:
 # Potency-only reward. No toxicity, QED, route-depth, uncertainty, or
 # potency-loss penalty is used in the reward calculation.
 reward:
-  potencyTarget: 5.70
-  potencyScale: 0.15
+  potencyTarget: 5.85
+  potencyScale: 0.20
+
   deltaPotencyTarget: 0.10
-  deltaPotencyScale: 0.08
+  deltaPotencyScale: 0.10
 
   invalidActionPenalty: -0.50
   invalidActionTerminates: true
 
   weights:
-    potency: 0.7
-    deltaPotency: 0.3
+    potency: 0.70
+    deltaPotency: 0.30
 
 multi_objective:
   enabled: true

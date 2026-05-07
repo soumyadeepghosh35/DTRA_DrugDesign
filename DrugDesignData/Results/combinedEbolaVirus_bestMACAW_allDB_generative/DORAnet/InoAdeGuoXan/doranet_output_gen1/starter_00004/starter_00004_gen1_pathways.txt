@@ -4,8 +4,8 @@ place holder empty
 place holder empty
 reaction SMILES stoichiometry ['(1, 1)$(1, 1)']
 reaction SMILES, name, and enthalpy:
-Nc1nc2c(ncn2[C@]23O[C@@H]([C@H]2O)[C@@H](COC(O)CC(=O)O)O3)c(=O)[nH]1.OO>>Nc1nc2c(ncn2[C@]23O[C@@H]([C@H]2O)[C@@H](COC(O)CC(O)O)O3)c(=O)[nH]1.O=O
-rule0078_14
+CC(=O)OP(=O)(O)OC(C)=O.CC(=O)OP(=O)(O)OC(C)=O>>CC(=O)OP(=O)(O)OC=O.CCC(=O)OP(=O)(O)OC(C)=O
+rule0126_2
 No_Thermo
 
 pathway number 2
@@ -14,17 +14,7 @@ place holder empty
 place holder empty
 reaction SMILES stoichiometry ['(1, 1)$(1, 1)']
 reaction SMILES, name, and enthalpy:
-Nc1nc2c(ncn2[C@]23O[C@@H]([C@H]2O)[C@@H](COC(O)CC(=O)O)O3)c(=O)[nH]1.Nc1nc2c(ncn2[C@]23O[C@@H]([C@H]2O)[C@@H](COC(O)CC(=O)O)O3)c(=O)[nH]1>>Nc1nc2c(ncn2[C@]23O[C@@H]([C@H]2O)[C@@H](COC(=O)CC(=O)O)O3)c(=O)[nH]1.Nc1nc2c(ncn2[C@]23O[C@@H]([C@H]2O)[C@@H](COC(O)CC(O)O)O3)c(=O)[nH]1
-rule0324_2
-No_Thermo
-
-pathway number 3
-place holder empty
-place holder empty
-place holder empty
-reaction SMILES stoichiometry ['(1, 1)$(1, 1)']
-reaction SMILES, name, and enthalpy:
-NC(=O)C1=CN([C@@H]2O[C@H](COP(=O)(O)OP(=O)(O)OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](OP(=O)(O)O)[C@@H]3O)[C@@H](O)[C@H]2O)C=CC1.Nc1nc2c(ncn2[C@]23O[C@@H]([C@H]2O)[C@@H](COC(O)CC(=O)O)O3)c(=O)[nH]1>>NC(=O)c1ccc[n+]([C@@H]2O[C@H](COP(=O)(O)OP(=O)(O)OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](OP(=O)(O)O)[C@@H]3O)[C@@H](O)[C@H]2O)c1.Nc1nc2c(ncn2[C@]23O[C@@H]([C@H]2O)[C@@H](COC(O)CC(O)O)O3)c(=O)[nH]1
-rule0003_163
+CC(=O)OP(=O)(O)OC(C)=O.C[S+](CC[C@H](N)C(=O)O)C[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1O>>CCC(=O)OP(=O)(O)OC(C)=O.Nc1ncnc2c1ncn2[C@@H]1O[C@H](CSCC[C@H](N)C(=O)O)[C@@H](O)[C@H]1O
+rule0043_12
 No_Thermo
 
