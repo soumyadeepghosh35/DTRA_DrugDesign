@@ -168,3 +168,5 @@ DrugDesignData/**/*.zip
 DrugDesignData/**/*.out
 DrugDesignData/**/*.png
 DrugDesignData/modelBuildingData/combinedEbolaVirusData_allDORAnetGeneratedMolecules_wMACAW
+
+notebooks/data/mol2vec_all.csv
