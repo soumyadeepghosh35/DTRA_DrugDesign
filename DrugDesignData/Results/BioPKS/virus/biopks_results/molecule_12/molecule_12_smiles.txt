@@ -1,2 +1,0 @@
-Original SMILES:  COCCN1C(=NC=2C=CC=CC21)C=3C=CC(OC)=C(O)C3
-Canonical SMILES: COCCn1c(-c2ccc(OC)c(O)c2)nc2ccccc21

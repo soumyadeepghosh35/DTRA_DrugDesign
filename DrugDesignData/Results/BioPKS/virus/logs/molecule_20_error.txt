@@ -1,4 +1,0 @@
-Target: molecule_20
-Original SMILES: CC(C)=CC1C(C(=O)NCCC=2C=CC=CN2)C1(C)C
-Canonical SMILES: CC(C)=CC1C(C(=O)NCCc2ccccn2)C1(C)C
-Error: [Errno 2] No such file or directory: '/mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/BioPKS-Pipeline/biopks_pipeline/../../DTRA_project/MACAW/DrugDesignData/Results/BioPKS/virus//molecule_20_PKS_BIO1_config.json'

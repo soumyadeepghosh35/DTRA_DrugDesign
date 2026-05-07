@@ -1,2 +1,0 @@
-Original SMILES:  CC(NC(=O)NC1=CC=CN=C1N2CCCCC2)C(=O)NC(C)(C)C
-Canonical SMILES: CC(NC(=O)Nc1cccnc1N1CCCCC1)C(=O)NC(C)(C)C

@@ -1,4 +1,0 @@
-Target: molecule_18
-Original SMILES: COCCOC=1C=CC(=CN1)NC(=O)C=2CCC(=O)N(C)N2
-Canonical SMILES: COCCOc1ccc(NC(=O)C2=NN(C)C(=O)CC2)cn1
-Error: [Errno 2] No such file or directory: '/mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/BioPKS-Pipeline/biopks_pipeline/../../DTRA_project/MACAW/DrugDesignData/Results/BioPKS/virus//molecule_18_PKS_BIO1_config.json'
