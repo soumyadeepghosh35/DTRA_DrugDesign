@@ -130,7 +130,7 @@ dmypy.json
 
 
 # data directory need to exclude
-#DrugDesignData/
+DrugDesignData/
 PubchemData/bioassayDataPubchem/
 PubchemData/databaseData/
 PubchemData/output
