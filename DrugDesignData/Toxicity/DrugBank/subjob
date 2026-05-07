@@ -1,2 +1,0 @@
-#python runToxicity.py toxicity_config_Drugbank.yaml > toxicity_Drugbank.out 
-python runToxicity.py toxicity_config_Drugbank_approved.yaml > toxicity_Drugbank_approved.out

@@ -1,2 +1,0 @@
-#python /users/sghosh6/DTRA_project/MACAW/DTRA_project_notebooks/Step4_virus_MLmodelComparison.py --config config.yaml > output.txt
-python /users/sghosh6/DTRA_project/MACAW/DTRA_project_notebooks/Step4_virus_MLmodelComparison.py --config config_noDuplicates.yaml > output_noDuplicates.txt

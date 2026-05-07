@@ -1,8 +1,0 @@
-#!/bin/bash
-
-SRC="/users/sghosh6/DTRA_project/MACAW/DrugDesignData/"
-DEST="/users/sghosh6/DTRA_project/MACAW/DTRA_ART/DrugDesignData/"
-LOGFILE="/users/sghosh6/DTRA_project/MACAW/DrugDesignData/sync_drugdesigndata.log"
-
-echo "===== $(date) =====" >> "$LOGFILE"
-rsync -avh --update "$SRC" "$DEST" >> "$LOGFILE" 2>&1

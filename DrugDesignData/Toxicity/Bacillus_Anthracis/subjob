@@ -1,3 +1,0 @@
-python runToxicity.py toxicity_config_buyable.yaml > toxicity_buyable.out
-python runToxicity.py toxicity_config_DORAnetMol.yaml > toxicity_DORAnetMol.out
-python runToxicity.py toxicity_config_BasidalinOnly.yaml > toxicity_BasidalinOnly.out
