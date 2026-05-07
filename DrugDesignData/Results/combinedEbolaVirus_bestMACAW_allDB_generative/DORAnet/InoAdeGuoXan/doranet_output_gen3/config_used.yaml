@@ -1,0 +1,45 @@
+input:
+  SMILESfile: ../../combinedEbola_allDORAnetGenerated_Antivirals_wARTprediction_top20.csv
+  smiles_column: Canonical_SMILES
+  start_index: 0
+  num_smiles: null
+output:
+  directory: doranet_output_gen3
+  generation_suffix_template: _gen{gen}
+  write_combined_summary: true
+parallel:
+  num_workers: 10
+  result_timeout_seconds: 600
+  join_timeout_seconds: 60
+network:
+  generations:
+  - 1
+  - 2
+  - 3
+  ruleset: JN3604IMT
+  direction: forward
+  active_generation: 3
+max_atoms:
+  mode: auto_from_starters
+  elements:
+  - C
+  - N
+  - O
+  - S
+  multiplier: 1.5
+  rounding: ceil
+  minimum:
+    C: 1
+    N: 0
+    O: 0
+    S: 0
+  static_values:
+    C: 12
+    N: 3
+    O: 5
+    S: 3
+resolved_max_atoms:
+  C: 21
+  N: 8
+  O: 20
+  S: 2
