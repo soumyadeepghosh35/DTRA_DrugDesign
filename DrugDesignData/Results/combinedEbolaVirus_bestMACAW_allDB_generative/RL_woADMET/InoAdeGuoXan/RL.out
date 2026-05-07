@@ -678,3 +678,14 @@ Job name: rl_potency_only_gen1_a63439230363
 Job type: enzymatic network expansion forward
 Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
 Job started on: 2026-05-07 13:35:04.009982
+Number of generations: 1
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 742
+Number of reactions: 760
+Time used for network generation: 9.23 minutes
+
+Job name: rl_potency_only_gen1_e1cbedf05248
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-07 13:44:25.230664
