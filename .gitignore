@@ -161,3 +161,4 @@ DrugDesignData/**/*.bin
 DrugDesignData/**/*.zip
 DrugDesignData/**/*.safetensors
 DrugDesignData/**/*.msgpack
+DrugDesignData/**/*.pgnet
