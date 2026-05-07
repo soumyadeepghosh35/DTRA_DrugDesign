@@ -165,5 +165,6 @@ DrugDesignData/**/*.pgnet
 DrugDesignData/**/*.pdf
 DrugDesignData/**/*.txt
 DrugDesignData/**/*.zip
+DrugDesignData/**/*.out
 DrugDesignData/**/*.png
 DrugDesignData/modelBuildingData/combinedEbolaVirusData_allDORAnetGeneratedMolecules_wMACAW
