@@ -152,6 +152,8 @@ DrugDesignData/**/*.csv
 DrugDesignData/**/*.gif
 DrugDesignData/**/*.svg
 DrugDesignData/**/*.cpkl
+DrugDesignData/**/*.pkl
+DrugDesignData/**/*.gz
 DrugDesignData/**/*.joblib
 DrugDesignData/**/*.xml
 DrugDesignData/**/*.json
