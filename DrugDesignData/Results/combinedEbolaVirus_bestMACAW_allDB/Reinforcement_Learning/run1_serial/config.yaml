@@ -1,0 +1,189 @@
+# Run with: python runRL_potency_frontier.py config_potency_frontier.yaml
+
+project_paths:
+  doranet_path: /users/sghosh6/DTRA_project/MACAW/doranet
+  art_path: /users/sghosh6/DTRA_project/MACAW/AutomatedRecommendationTool
+  extra_python_paths: [., ..]
+
+output:
+  output_dir: RL_outputs_potency_frontier
+
+mode:
+  run_smoke_tests: false
+  smoke_test_n: 2
+
+seed:
+  seed_csv: /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB/combinedEbolaVirus_potency_coreToxicity_all_DORAnetGenerated_Antivirals.csv
+  smiles_col: SMILES
+  max_seeds: 150
+  priority_col: OverallPriority2D
+  required_columns: [SMILES, pPotency_prediction, pPotency_std, pPotency_lower_95CI, pPotency_upper_95CI, coreToxicityScore, ToxicitySafety, OverallPriority2D, QED]
+
+  # Potency-frontier search should not simply use the first max_seeds rows.
+  # This selects high-potency seeds while keeping scaffold diversity.
+  selection:
+    method: top_potency_diverse
+    potency_col: pPotency_prediction
+    uncertainty_col: pPotency_std
+    similarity_threshold: 0.75
+    fingerprint_radius: 2
+    fingerprint_bits: 2048
+    prefilter_multiplier: 10
+
+  # Resets are biased toward the strongest seeds, while still allowing exploration.
+  sampling:
+    method: potency_softmax
+    potency_col: pPotency_prediction
+    temperature: 0.15
+    min_weight: 0.000001
+
+macaw:
+  transformer_path: /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB/combinedEbolaVirusData_allDB_MACAW_transformer.joblib
+
+art:
+  model_path: /users/sghosh6/DTRA_project/MACAW/DTRA_ART/ART_CommandLine/Ebola_allDB/ART_results/art.cpkl
+  output_dir: /users/sghosh6/DTRA_project/MACAW/DTRA_ART/ART_CommandLine/Ebola_allDB/ART_results
+  input_feature_prefix: MACAW_
+
+toxicity:
+  reference_scored_csv: /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB/drugBankDrug_FDAapproved_AntiViral_wART_wADMET.csv
+  weight_csv: null
+  reference_input_csv: null
+  reference_smiles_col: SMILES
+  max_reference_rows: null
+  endpoint_meta_csv: null
+  min_existing_admet_endpoints: 5
+
+doranet:
+  ruleset: JN3604IMT
+  gen: 2
+  max_actions: 64
+  job_prefix: rl_potency
+  network_output_dir: .
+  max_atoms: {C: 41, N: 9, O: 12, S: 0}
+
+rl:
+  max_steps: 4
+  max_actions: 64
+  fingerprint_bits: 2048
+
+# The key change is deltaPotencyTarget: the agent is rewarded for improving
+# over the exact parent seed, not only for meeting an absolute potency target.
+reward:
+  potencyTarget: 5.70
+  potencyScale: 0.15
+  deltaPotencyTarget: 0.10
+  deltaPotencyScale: 0.08
+
+  # Do not make toxicity too strict during frontier discovery. Safety is handled
+  # by the safety-rescue policy and final Pareto ranking.
+  toxicityTarget: 0.35
+  toxicityScale: 0.12
+  deltaToxicityTarget: 0.02
+  deltaToxicityScale: 0.08
+
+  qedTarget: 0.40
+  qedScale: 0.08
+  potencyStdRef: 0.25
+  routeDepthPenalty: 0.03
+
+  # Penalize invalid actions strongly so PPO does not waste rollouts learning
+  # fixed padded action indices.
+  invalidActionPenalty: -0.50
+  invalidActionTerminates: true
+
+  # Penalize final molecules that lose potency relative to their seed.
+  potencyLossTolerance: 0.00
+  potencyLossPenaltyScale: 0.75
+
+multi_objective:
+  enabled: true
+  preference_sets:
+    potency_frontier:
+      potency: 0.65
+      deltaPotency: 0.20
+      toxicity: 0.03
+      deltaToxicity: 0.02
+      qed: 0.02
+      route: 0.00
+      uncertainty: 0.06
+      potencyLoss: 0.02
+
+    potency_safety_rescue:
+      potency: 0.45
+      deltaPotency: 0.20
+      toxicity: 0.18
+      deltaToxicity: 0.06
+      qed: 0.03
+      route: 0.02
+      uncertainty: 0.04
+      potencyLoss: 0.02
+
+    balanced_followup:
+      potency: 0.35
+      deltaPotency: 0.15
+      toxicity: 0.25
+      deltaToxicity: 0.08
+      qed: 0.05
+      route: 0.02
+      uncertainty: 0.08
+      potencyLoss: 0.02
+
+# Keep Pareto enabled for post-run annotation, but set the training-time archive
+# bonus/penalty to zero so Pareto does not pull the RL search away from potency too early.
+pareto:
+  enabled: true
+  initialize_with_seeds: true
+  non_dominated_bonus: 0.00
+  dominated_penalty: 0.00
+  annotated_output_csv: rl_potency_frontier_candidates_with_pareto.csv
+  front_output_csv: rl_potency_frontier_pareto_front.csv
+  ranked_front_output_csv: rl_potency_frontier_pareto_front_ranked.csv
+  objectives:
+    pPotency_prediction: maximize
+    deltaPotency: maximize
+    coreToxicityScore: minimize
+    pPotency_std: minimize
+    QED: maximize
+  ranking:
+    enabled: true
+    method: percentile
+    pPotency_prediction: 0.55
+    deltaPotency: 0.25
+    coreToxicityScore: 0.10
+    pPotency_std: 0.07
+    QED: 0.03
+
+# Before trusting PPO, this checks whether DORAnet + ART can produce any
+# higher-potency molecule under the current reaction/action constraints.
+diagnostics:
+  potency_beam_search:
+    enabled: true
+    top_seed_count: 25
+    max_depth: 2
+    beam_width: 32
+    top_output_rows: 500
+    output_csv: diagnostic_doranet_beam_potency.csv
+
+training:
+  enabled: true
+  total_timesteps: 100000
+  policy: MlpPolicy
+  learning_rate: 0.0003
+  n_steps: 1024
+  batch_size: 128
+  gamma: 0.97
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.08
+  verbose: 1
+
+rollout:
+  enabled: true
+  num_episodes_per_policy: 5000
+  deterministic: false
+  output_csv: rl_potency_frontier_generated_candidates.csv
+
+plotting:
+  enabled: true
+  output_png: rl_potency_frontier_generated_vs_seed_potency_toxicity.png

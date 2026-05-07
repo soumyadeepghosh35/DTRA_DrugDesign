@@ -1,0 +1,64 @@
+Model Comparison Summary
+--------------------------------------------------------------------------------
+
+Best model (test R²): CatBoost (R² = 0.660)
+
+Performance ranking (by test R²):
+--------------------------------------------------------------------------------
+5. CatBoost        - R²: 0.660, MAE: 0.45, RMSE: 0.62
+2. RandomForest    - R²: 0.650, MAE: 0.45, RMSE: 0.62
+3. XGBoost         - R²: 0.650, MAE: 0.45, RMSE: 0.63
+1. SVR             - R²: 0.620, MAE: 0.46, RMSE: 0.65
+4. LightGBM        - R²: 0.620, MAE: 0.47, RMSE: 0.65
+6. NeuralNetwork   - R²: 0.560, MAE: 0.53, RMSE: 0.70
+
+Detailed metrics:
+--------------------------------------------------------------------------------
+        Model  Train_R2  Train_MAE  Train_RMSE  Test_R2  Test_MAE  Test_RMSE
+          SVR      0.76       0.33        0.52     0.62      0.46       0.65
+ RandomForest      0.88       0.24        0.36     0.65      0.45       0.62
+      XGBoost      0.89       0.24        0.36     0.65      0.45       0.63
+     LightGBM      0.87       0.26        0.38     0.62      0.47       0.65
+     CatBoost      0.87       0.27        0.39     0.66      0.45       0.62
+NeuralNetwork      0.67       0.44        0.60     0.56      0.53       0.70
+
+Model analysis:
+--------------------------------------------------------------------------------
+
+SVR:
+  Train R²: 0.757
+  Test R²: 0.624
+  Overfitting gap: 0.133
+  Status: Moderate overfitting
+
+RandomForest:
+  Train R²: 0.883
+  Test R²: 0.651
+  Overfitting gap: 0.232
+  Status: High overfitting
+
+XGBoost:
+  Train R²: 0.886
+  Test R²: 0.646
+  Overfitting gap: 0.240
+  Status: High overfitting
+
+LightGBM:
+  Train R²: 0.868
+  Test R²: 0.619
+  Overfitting gap: 0.249
+  Status: High overfitting
+
+CatBoost:
+  Train R²: 0.867
+  Test R²: 0.656
+  Overfitting gap: 0.210
+  Status: High overfitting
+
+NeuralNetwork:
+  Train R²: 0.675
+  Test R²: 0.559
+  Overfitting gap: 0.116
+  Status: Moderate overfitting
+
+--------------------------------------------------------------------------------

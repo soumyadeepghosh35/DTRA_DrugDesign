@@ -1,0 +1,2 @@
+Original SMILES:  COCCOC=1C=CC(=CN1)NC(=O)C=2CCC(=O)N(C)N2
+Canonical SMILES: COCCOc1ccc(NC(=O)C2=NN(C)C(=O)CC2)cn1

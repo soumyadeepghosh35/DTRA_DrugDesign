@@ -1,0 +1,314 @@
+********************************************************************************
+MULTI-MODEL COMPARISON - BATCH PROCESSING VERSION
+********************************************************************************
+Job started at: 2025-11-14 09:17:22
+
+********************************************************************************
+DATA LOADING AND PREPARATION
+********************************************************************************
+Original columns in file: ['ID', 'compound_id', 'Smiles', 'pPotency', 'BacteriaClassifier']
+Original shape: (116388, 5)
+Requested filterColumns: ['Smiles', 'BacteriaClassifier', 'pPotency']
+Columns after filtering: ['Smiles', 'BacteriaClassifier', 'pPotency']
+Shape after filtering: (116388, 3)
+Using SMILES column: 'Smiles'
+Using Target column: 'pPotency'
+Initial data size: 116388 rows
+Valid SMILES after validation: 116387 out of 116388
+Final dataset size: 116387 samples
+  [Memory after data loading]: 0.37 GB
+
+  LARGE DATASET DETECTED: 116,387 samples
+   Batch processing ENABLED (threshold: 50,000)
+   Batch size: 10,000
+
+MACAW Parameters:
+  type_fp: atompairs
+  metric: sokal
+  n_components: 15
+  n_landmarks: 200
+  random_state: 42
+
+Model Training Configuration:
+  CV Folds: 10
+  Random State: 42
+  Parallel Jobs: 10
+  Memory Efficient: True
+
+********************************************************************************
+CROSS-VALIDATION TRAINING (10-FOLD)
+********************************************************************************
+
+********************************************************************************
+BATCH PROCESSING MODE
+********************************************************************************
+Total samples: 116,387
+Batch size: 10,000
+Number of batches: 12
+Parallel jobs per batch: 10
+CV folds: 10
+********************************************************************************
+
+Batch 1/12: Samples 0 to 10,000
+
+********************************************************************************
+BATCH 1: Processing 10000 samples
+********************************************************************************
+  [Memory Batch 1 start]: 0.36 GB
+  Using 10 parallel workers for 10 folds
+  [Memory Batch 1 end]: 0.38 GB
+  [Memory after batch 1]: 0.38 GB
+
+Batch 2/12: Samples 10,000 to 20,000
+
+********************************************************************************
+BATCH 2: Processing 10000 samples
+********************************************************************************
+  [Memory Batch 2 start]: 0.38 GB
+  Using 10 parallel workers for 10 folds
+  [Memory Batch 2 end]: 0.38 GB
+  [Memory after batch 2]: 0.38 GB
+
+Batch 3/12: Samples 20,000 to 30,000
+
+********************************************************************************
+BATCH 3: Processing 10000 samples
+********************************************************************************
+  [Memory Batch 3 start]: 0.38 GB
+  Using 10 parallel workers for 10 folds
+  [Memory Batch 3 end]: 0.39 GB
+  [Memory after batch 3]: 0.39 GB
+
+Batch 4/12: Samples 30,000 to 40,000
+
+********************************************************************************
+BATCH 4: Processing 10000 samples
+********************************************************************************
+  [Memory Batch 4 start]: 0.39 GB
+  Using 10 parallel workers for 10 folds
+  [Memory Batch 4 end]: 0.39 GB
+  [Memory after batch 4]: 0.39 GB
+
+Batch 5/12: Samples 40,000 to 50,000
+
+********************************************************************************
+BATCH 5: Processing 10000 samples
+********************************************************************************
+  [Memory Batch 5 start]: 0.39 GB
+  Using 10 parallel workers for 10 folds
+  [Memory Batch 5 end]: 0.39 GB
+  [Memory after batch 5]: 0.39 GB
+
+Batch 6/12: Samples 50,000 to 60,000
+
+********************************************************************************
+BATCH 6: Processing 10000 samples
+********************************************************************************
+  [Memory Batch 6 start]: 0.39 GB
+  Using 10 parallel workers for 10 folds
+  [Memory Batch 6 end]: 0.40 GB
+  [Memory after batch 6]: 0.40 GB
+
+Batch 7/12: Samples 60,000 to 70,000
+
+********************************************************************************
+BATCH 7: Processing 10000 samples
+********************************************************************************
+  [Memory Batch 7 start]: 0.40 GB
+  Using 10 parallel workers for 10 folds
+  [Memory Batch 7 end]: 0.40 GB
+  [Memory after batch 7]: 0.40 GB
+
+Batch 8/12: Samples 70,000 to 80,000
+
+********************************************************************************
+BATCH 8: Processing 10000 samples
+********************************************************************************
+  [Memory Batch 8 start]: 0.40 GB
+  Using 10 parallel workers for 10 folds
+  [Memory Batch 8 end]: 0.41 GB
+  [Memory after batch 8]: 0.41 GB
+
+Batch 9/12: Samples 80,000 to 90,000
+
+********************************************************************************
+BATCH 9: Processing 10000 samples
+********************************************************************************
+  [Memory Batch 9 start]: 0.41 GB
+  Using 10 parallel workers for 10 folds
+  [Memory Batch 9 end]: 0.41 GB
+  [Memory after batch 9]: 0.41 GB
+
+Batch 10/12: Samples 90,000 to 100,000
+
+********************************************************************************
+BATCH 10: Processing 10000 samples
+********************************************************************************
+  [Memory Batch 10 start]: 0.41 GB
+  Using 10 parallel workers for 10 folds
+  [Memory Batch 10 end]: 0.42 GB
+  [Memory after batch 10]: 0.42 GB
+
+Batch 11/12: Samples 100,000 to 110,000
+
+********************************************************************************
+BATCH 11: Processing 10000 samples
+********************************************************************************
+  [Memory Batch 11 start]: 0.42 GB
+  Using 10 parallel workers for 10 folds
+  [Memory Batch 11 end]: 0.42 GB
+  [Memory after batch 11]: 0.42 GB
+
+Batch 12/12: Samples 110,000 to 116,387
+
+********************************************************************************
+BATCH 12: Processing 6387 samples
+********************************************************************************
+  [Memory Batch 12 start]: 0.42 GB
+  Using 10 parallel workers for 10 folds
+  [Memory Batch 12 end]: 0.42 GB
+  [Memory after batch 12]: 0.42 GB
+
+********************************************************************************
+MERGING RESULTS FROM 12 BATCHES
+********************************************************************************
+  SVR: 116387 total predictions
+  RandomForest: 116387 total predictions
+  XGBoost: 116387 total predictions
+  NeuralNetwork: 116387 total predictions
+
+********************************************************************************
+CV METRICS SUMMARY
+********************************************************************************
+        Model  Train_R2  Train_MAE  Train_RMSE  Test_R2  Test_MAE  Test_RMSE
+          SVR     0.330      1.405       2.125    0.203     1.620      2.318
+ RandomForest     0.783      0.808       1.210    0.337     1.555      2.114
+      XGBoost     0.576      1.288       1.691    0.292     1.673      2.185
+NeuralNetwork     0.280      1.739       2.203    0.212     1.818      2.305
+
+CV results saved to: /users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/bacteriaCommandline_10fold/
+
+********************************************************************************
+TRAINING FINAL MODELS ON FULL DATASET
+********************************************************************************
+Training on 80% of data, testing on 20%
+
+Training SVR...
+  [Memory before SVR]: 0.50 GB
+50000
+  [Memory after SVR]: 5.14 GB
+
+Training RandomForest...
+  [Memory before RandomForest]: 5.14 GB
+50000
+  [Memory after RandomForest]: 5.23 GB
+
+Training XGBoost...
+  [Memory before XGBoost]: 5.23 GB
+50000
+  [Memory after XGBoost]: 5.77 GB
+
+Training NeuralNetwork...
+  [Memory before NeuralNetwork]: 5.77 GB
+50000
+  [Memory after NeuralNetwork]: 5.84 GB
+
+================================================================================
+FULL DATA HOLDOUT PERFORMANCE
+================================================================================
+        Model  Train_R2  Train_MAE  Test_R2  Test_MAE  N_train  N_test
+          SVR    0.3014     1.4473   0.2580    1.5241    93109   23278
+ RandomForest    0.7010     0.9151   0.4485    1.3149    93109   23278
+      XGBoost    0.3366     1.6584   0.2934    1.7128    93109   23278
+NeuralNetwork    0.2882     1.6854   0.2567    1.7253    93109   23278
+
+================================================================================
+MODEL COMPARISON COMPREHENSIVE REPORT
+================================================================================
+Generated: 2025-11-14 12:10:18
+
+--------------------------------------------------------------------------------
+CROSS-VALIDATION RESULTS
+--------------------------------------------------------------------------------
+Best Model (CV): RandomForest (Test R² = 0.337)
+
+CV Performance Metrics:
+        Model  Train_R2  Train_MAE  Train_RMSE  Test_R2  Test_MAE  Test_RMSE
+          SVR     0.330      1.405       2.125    0.203     1.620      2.318
+ RandomForest     0.783      0.808       1.210    0.337     1.555      2.114
+      XGBoost     0.576      1.288       1.691    0.292     1.673      2.185
+NeuralNetwork     0.280      1.739       2.203    0.212     1.818      2.305
+
+Overfitting Analysis (CV):
+  SVR            : Train R²=0.330, Test R²=0.203, Gap=0.127 (Moderate)
+  RandomForest   : Train R²=0.783, Test R²=0.337, Gap=0.446 (High overfitting)
+  XGBoost        : Train R²=0.576, Test R²=0.292, Gap=0.284 (High overfitting)
+  NeuralNetwork  : Train R²=0.280, Test R²=0.212, Gap=0.068 (Good)
+
+--------------------------------------------------------------------------------
+HOLDOUT VALIDATION RESULTS (Full Data Split)
+--------------------------------------------------------------------------------
+Best Model (Holdout): RandomForest (Test R² = 0.4485)
+
+Holdout Performance Metrics:
+        Model  Train_R2  Train_MAE  Train_RMSE  Test_R2  Test_MAE  Test_RMSE
+          SVR    0.3014     1.4473      2.1706   0.2580    1.5241     2.2362
+ RandomForest    0.7010     0.9151      1.4200   0.4485    1.3149     1.9277
+      XGBoost    0.3366     1.6584      2.1151   0.2934    1.7128     2.1821
+NeuralNetwork    0.2882     1.6854      2.1909   0.2567    1.7253     2.2381
+
+Overfitting Analysis (Holdout):
+  SVR            : Train R²=0.301, Test R²=0.258, Gap=0.043 (Excellent)
+  RandomForest   : Train R²=0.701, Test R²=0.449, Gap=0.252 (High overfitting)
+  XGBoost        : Train R²=0.337, Test R²=0.293, Gap=0.043 (Excellent)
+  NeuralNetwork  : Train R²=0.288, Test R²=0.257, Gap=0.032 (Excellent)
+
+--------------------------------------------------------------------------------
+CV vs HOLDOUT COMPARISON
+--------------------------------------------------------------------------------
+  SVR            : CV Test R²=0.203, Holdout Test R²=0.258, Diff=+0.055
+  RandomForest   : CV Test R²=0.337, Holdout Test R²=0.449, Diff=+0.111
+  XGBoost        : CV Test R²=0.292, Holdout Test R²=0.293, Diff=+0.001
+  NeuralNetwork  : CV Test R²=0.212, Holdout Test R²=0.257, Diff=+0.045
+
+================================================================================
+
+********************************************************************************
+SAVED FILES SUMMARY
+********************************************************************************
+
+1. MODELS (.joblib files):
+   wDuplicates_SVR_regr_pred.joblib
+   wDuplicates_SVR_macaw_model.joblib
+   wDuplicates_RandomForest_regr_pred.joblib
+   wDuplicates_RandomForest_macaw_model.joblib
+   wDuplicates_XGBoost_regr_pred.joblib
+   wDuplicates_XGBoost_macaw_model.joblib
+   wDuplicates_NeuralNetwork_regr_pred.joblib
+   wDuplicates_NeuralNetwork_macaw_model.joblib
+   wDuplicates_NeuralNetwork_scaler.joblib
+
+2. CROSS-VALIDATION PREDICTIONS:
+   wDuplicates_predictions_test_*.csv
+   wDuplicates_predictions_train_*.csv
+
+3. HOLDOUT VALIDATION PREDICTIONS:
+   wDuplicates_predictions_fullData_train_*.csv
+   wDuplicates_predictions_fullData_test_*.csv
+
+4. METRICS:
+   wDuplicates_metrics_summary.csv
+   wDuplicates_fullData_metrics.csv
+
+5. FEATURE IMPORTANCES:
+   wDuplicates_RandomForest_feature_importances.csv
+   wDuplicates_XGBoost_feature_importances.csv
+
+6. COMPREHENSIVE REPORT:
+   wDuplicates_comprehensive_report.txt
+
+********************************************************************************
+COMPLETED in 10376.5s (172.9 minutes)
+All results saved to: /users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/bacteriaCommandline_10fold/
+  [Memory final]: 5.84 GB
+********************************************************************************

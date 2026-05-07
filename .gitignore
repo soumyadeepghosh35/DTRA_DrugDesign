@@ -130,7 +130,7 @@ dmypy.json
 
 
 # data directory need to exclude
-DrugDesignData/
+#DrugDesignData/
 PubchemData/bioassayDataPubchem/
 PubchemData/databaseData/
 PubchemData/output
@@ -144,3 +144,18 @@ REINVENT4/
 ASKCOSv2/
 DTRA_ART/
 ADMET_AI/
+
+
+# Ignore these file types anywhere under DrugDesignData (recursively)
+DrugDesignData/**/*.sdf
+DrugDesignData/**/*.csv
+DrugDesignData/**/*.gif
+DrugDesignData/**/*.svg
+DrugDesignData/**/*.cpkl
+DrugDesignData/**/*.joblib
+DrugDesignData/**/*.xml
+DrugDesignData/**/*.json
+DrugDesignData/**/*.bin
+DrugDesignData/**/*.zip
+DrugDesignData/**/*.safetensors
+DrugDesignData/**/*.msgpack

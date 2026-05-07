@@ -1,0 +1,105 @@
+================================================================================
+MULTI-MODEL COMPARISON - MEMORY OPTIMIZED
+================================================================================
+Job started at: 2025-11-18 15:00:35
+
+Input file: /users/sghosh6/DTRA_project/MACAW/DrugDesignData/modelBuildingData/allBacteriaData_chEMBL_noDuplicates_MLready.csv (shape: (52264, 3))
+Output Directory: .
+Prefix: noDuplicates
+Using 10 CPU cores (strict limit)
+
+Original columns in file: ['Smiles', 'BacteriaClassifier', 'pPotency']
+Requested filterColumns: None
+Using SMILES column: 'Smiles'
+Using Target column: 'pPotency'
+Valid SMILES after validation: 52263 out of 52264
+  [Memory after data loading]: 0.37 GB
+Loaded 52263 valid samples after validation
+
+Training models with 10-fold CV...
+Parallelization strategy:
+  - Outer (folds): 10 cores
+  - Inner (GridSearchCV): 1 core per fold
+  - Models (RF/XGB): 1 core per model
+  - TOTAL max cores used: 10
+  [Memory before CV]: 0.36 GB
+  [Memory after CV, before aggregation]: 0.41 GB
+  [Memory after aggregation]: 0.41 GB
+
+================================================================================
+METRICS SUMMARY
+================================================================================
+        Model  Train_R2  Train_MAE  Train_RMSE  Test_R2  Test_MAE  Test_RMSE
+          SVR     0.478      1.212       1.892    0.377     1.403      2.066
+ RandomForest     0.856      0.665       0.993    0.438     1.398      1.963
+      XGBoost     0.443      1.523       1.953    0.331     1.666      2.140
+NeuralNetwork     0.385      1.584       2.053    0.306     1.681      2.180
+
+--------------------------------------------------------------------------------
+MODEL COMPARISON SUMMARY
+--------------------------------------------------------------------------------
+Generated: 2025-11-18 19:08:46
+
+Best Model: RandomForest (Test R² = 0.438)
+
+Performance Metrics:
+--------------------------------------------------------------------------------
+        Model  Train_R2  Train_MAE  Train_RMSE  Test_R2  Test_MAE  Test_RMSE
+          SVR     0.478      1.212       1.892    0.377     1.403      2.066
+ RandomForest     0.856      0.665       0.993    0.438     1.398      1.963
+      XGBoost     0.443      1.523       1.953    0.331     1.666      2.140
+NeuralNetwork     0.385      1.584       2.053    0.306     1.681      2.180
+
+Model Analysis:
+--------------------------------------------------------------------------------
+SVR            : Train R²=0.478, Test R²=0.377, Gap=0.100 (Moderate)
+RandomForest   : Train R²=0.856, Test R²=0.438, Gap=0.418 (High overfitting)
+XGBoost        : Train R²=0.443, Test R²=0.331, Gap=0.112 (Moderate)
+NeuralNetwork  : Train R²=0.385, Test R²=0.306, Gap=0.078 (Good)
+--------------------------------------------------------------------------------
+
+================================================================================
+TRAINING FINAL MODELS ON FULL DATASET
+================================================================================
+
+Training on 80% of data, testing on 20%
+Training SVR on full dataset...
+  [Memory before SVR]: 0.42 GB
+  [Memory after SVR]: 3.22 GB
+Training RandomForest on full dataset...
+  [Memory before RandomForest]: 3.22 GB
+  [Memory after RandomForest]: 3.38 GB
+Training XGBoost on full dataset...
+  [Memory before XGBoost]: 3.38 GB
+  [Memory after XGBoost]: 3.81 GB
+Training NeuralNetwork on full dataset...
+  [Memory before NeuralNetwork]: 3.81 GB
+  [Memory after NeuralNetwork]: 3.96 GB
+
+================================================================================
+FULL DATA HOLDOUT PERFORMANCE
+================================================================================
+        Model  Train_R2  Train_MAE  Test_R2  Test_MAE
+          SVR    0.4746     1.2094   0.3832    1.4128
+ RandomForest    0.8511     0.6863   0.4402    1.4269
+      XGBoost    0.4497     1.5137   0.3376    1.6783
+NeuralNetwork    0.3508     1.6398   0.2919    1.7319
+
+================================================================================
+ALL MODELS SAVED
+================================================================================
+  - noDuplicates_SVR_regr_pred.joblib
+  - noDuplicates_SVR_macaw_model.joblib
+  - noDuplicates_RandomForest_regr_pred.joblib
+  - noDuplicates_RandomForest_macaw_model.joblib
+  - noDuplicates_XGBoost_regr_pred.joblib
+  - noDuplicates_XGBoost_macaw_model.joblib
+  - noDuplicates_NeuralNetwork_regr_pred.joblib
+  - noDuplicates_NeuralNetwork_macaw_model.joblib
+  - noDuplicates_NeuralNetwork_scaler.joblib
+
+================================================================================
+COMPLETED in 16104.2s (268.4 minutes)
+Results saved to: .
+  [Memory final]: 3.96 GB
+================================================================================

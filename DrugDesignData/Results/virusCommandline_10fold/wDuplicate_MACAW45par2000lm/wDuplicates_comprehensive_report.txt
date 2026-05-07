@@ -1,0 +1,50 @@
+================================================================================
+MODEL COMPARISON COMPREHENSIVE REPORT
+================================================================================
+Generated: 2025-11-24 15:58:41
+
+--------------------------------------------------------------------------------
+CROSS-VALIDATION RESULTS
+--------------------------------------------------------------------------------
+Best Model (CV): RandomForest (Test R² = 0.588)
+
+CV Performance Metrics:
+        Model  Train_R2  Train_MAE  Train_RMSE  Test_R2  Test_MAE  Test_RMSE
+          SVR     0.722      0.352       0.568    0.564     0.489      0.712
+ RandomForest     0.819      0.306       0.459    0.588     0.490      0.692
+      XGBoost     0.826      0.300       0.449    0.583     0.494      0.696
+NeuralNetwork     0.616      0.491       0.668    0.478     0.570      0.779
+
+Overfitting Analysis (CV):
+  SVR            : Train R²=0.722, Test R²=0.564, Gap=0.158 (High overfitting)
+  RandomForest   : Train R²=0.819, Test R²=0.588, Gap=0.231 (High overfitting)
+  XGBoost        : Train R²=0.826, Test R²=0.583, Gap=0.243 (High overfitting)
+  NeuralNetwork  : Train R²=0.616, Test R²=0.478, Gap=0.138 (Moderate)
+
+--------------------------------------------------------------------------------
+HOLDOUT VALIDATION RESULTS (Full Data Split)
+--------------------------------------------------------------------------------
+Best Model (Holdout): XGBoost (Test R² = 0.5658)
+
+Holdout Performance Metrics:
+        Model  Train_R2  Train_MAE  Train_RMSE  Test_R2  Test_MAE  Test_RMSE
+          SVR    0.7284     0.3485      0.5619   0.5593    0.4934     0.7149
+ RandomForest    0.8151     0.3121      0.4637   0.5632    0.4952     0.7117
+      XGBoost    0.8250     0.3097      0.4510   0.5658    0.4972     0.7096
+NeuralNetwork    0.7243     0.4086      0.5662   0.5167    0.5367     0.7487
+
+Overfitting Analysis (Holdout):
+  SVR            : Train R²=0.728, Test R²=0.559, Gap=0.169 (High overfitting)
+  RandomForest   : Train R²=0.815, Test R²=0.563, Gap=0.252 (High overfitting)
+  XGBoost        : Train R²=0.825, Test R²=0.566, Gap=0.259 (High overfitting)
+  NeuralNetwork  : Train R²=0.724, Test R²=0.517, Gap=0.208 (High overfitting)
+
+--------------------------------------------------------------------------------
+CV vs HOLDOUT COMPARISON
+--------------------------------------------------------------------------------
+  SVR            : CV Test R²=0.564, Holdout Test R²=0.559, Diff=-0.005
+  RandomForest   : CV Test R²=0.588, Holdout Test R²=0.563, Diff=-0.025
+  XGBoost        : CV Test R²=0.583, Holdout Test R²=0.566, Diff=-0.017
+  NeuralNetwork  : CV Test R²=0.478, Holdout Test R²=0.517, Diff=+0.039
+
+================================================================================

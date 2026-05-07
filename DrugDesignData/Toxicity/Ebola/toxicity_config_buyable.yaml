@@ -1,0 +1,34 @@
+dataDir: /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/
+artResultsSubdir: Results/combinedEbolaVirus_bestMACAW/
+
+inputFile: Ebola_all_Buyable_AntiVirals_wARTprediction.csv
+
+# Set to null to process full file
+selectSMILES: null
+
+diversityChunkSize: 1000
+saveEveryBatch: true
+batchSize: 500
+saveEveryBatch: true
+resumeFromCheckpoint: true
+deduplicateSmiles: true
+
+# Diversity filtering
+enableDiversityFilter: true
+similarityThreshold: 0.75
+fingerprintRadius: 2
+fingerprintBits: 2048
+saveDiversityFilteredInput: true
+diversityOutputSuffix: _diverseInput
+
+outputSuffix: _wToxicity
+
+requiredInputColumns:
+  - SMILES
+  - pPotency_prediction
+  - pPotency_std
+  - pPotency_lower_95CI
+  - pPotency_upper_95CI
+  - IC50(M)_prediction
+  - IC50(M)_lower_95CI
+  - IC50(M)_upper_95CI

@@ -1,0 +1,40 @@
+********************************************************************************
+MULTI-MODEL COMPARISON - BATCH PROCESSING VERSION
+********************************************************************************
+Job started at: 2025-11-25 08:07:40
+
+********************************************************************************
+DATA LOADING AND PREPARATION
+********************************************************************************
+Original columns in file: ['ID', 'compound_id', 'Smiles', 'pPotency', 'VirusClassifier']
+Original shape: (4694, 5)
+Requested filterColumns: ['Smiles', 'VirusClassifier', 'pPotency']
+Columns after filtering: ['Smiles', 'VirusClassifier', 'pPotency']
+Shape after filtering: (4694, 3)
+Using SMILES column: 'Smiles'
+Using Target column: 'pPotency'
+Initial data size: 4694 rows
+Valid SMILES after validation: 4694 out of 4694
+Final dataset size: 4694 samples
+  [Memory after data loading]: 0.35 GB
+
+  Dataset size: 4,694 samples
+   Using standard processing (no batching)
+
+MACAW Parameters:
+  type_fp: atompairs
+  metric: sokal
+  n_components: 45
+  n_landmarks: 4000
+  random_state: 42
+
+Model Training Configuration:
+  CV Folds: 10
+  Random State: 42
+  Parallel Jobs: 10
+  Memory Efficient: True
+
+********************************************************************************
+CROSS-VALIDATION TRAINING (10-FOLD)
+********************************************************************************
+  Using 10 parallel workers for 10 folds

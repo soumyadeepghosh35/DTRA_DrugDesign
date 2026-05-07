@@ -1,0 +1,172 @@
+********************************************************************************
+MULTI-MODEL COMPARISON - BATCH PROCESSING VERSION
+********************************************************************************
+Job started at: 2025-11-25 10:59:25
+
+********************************************************************************
+DATA LOADING AND PREPARATION
+********************************************************************************
+Original columns in file: ['ID', 'compound_id', 'Smiles', 'pPotency', 'VirusClassifier']
+Original shape: (4694, 5)
+Requested filterColumns: ['Smiles', 'VirusClassifier', 'pPotency']
+Columns after filtering: ['Smiles', 'VirusClassifier', 'pPotency']
+Shape after filtering: (4694, 3)
+Using SMILES column: 'Smiles'
+Using Target column: 'pPotency'
+Initial data size: 4694 rows
+Valid SMILES after validation: 4694 out of 4694
+Final dataset size: 4694 samples
+  [Memory after data loading]: 0.35 GB
+
+  Dataset size: 4,694 samples
+   Using standard processing (no batching)
+
+MACAW Parameters:
+  type_fp: atompairs
+  metric: sokal
+  n_components: 45
+  n_landmarks: 3000
+  random_state: 42
+
+Model Training Configuration:
+  CV Folds: 10
+  Random State: 42
+  Parallel Jobs: 10
+  Memory Efficient: True
+
+********************************************************************************
+CROSS-VALIDATION TRAINING (10-FOLD)
+********************************************************************************
+  Using 10 parallel workers for 10 folds
+
+********************************************************************************
+CV METRICS SUMMARY
+********************************************************************************
+        Model  Train_R2  Train_MAE  Train_RMSE  Test_R2  Test_MAE  Test_RMSE
+          SVR     0.717      0.354       0.573    0.560     0.493      0.715
+ RandomForest     0.819      0.306       0.458    0.575     0.497      0.702
+      XGBoost     0.829      0.295       0.445    0.573     0.498      0.704
+NeuralNetwork     0.590      0.511       0.691    0.462     0.582      0.790
+
+CV results saved to: .
+
+********************************************************************************
+TRAINING FINAL MODELS ON FULL DATASET
+********************************************************************************
+Training on 80% of data, testing on 20%
+
+Training SVR...
+  [Memory before SVR]: 0.38 GB
+  [Memory after SVR]: 0.72 GB
+
+Training RandomForest...
+  [Memory before RandomForest]: 0.72 GB
+  [Memory after RandomForest]: 0.72 GB
+
+Training XGBoost...
+  [Memory before XGBoost]: 0.72 GB
+  [Memory after XGBoost]: 0.80 GB
+
+Training NeuralNetwork...
+  [Memory before NeuralNetwork]: 0.80 GB
+  [Memory after NeuralNetwork]: 0.80 GB
+
+================================================================================
+FULL DATA HOLDOUT PERFORMANCE
+================================================================================
+        Model  Train_R2  Train_MAE  Test_R2  Test_MAE  N_train  N_test
+          SVR    0.7218     0.3522   0.5658    0.4865     3755     939
+ RandomForest    0.8278     0.3001   0.5630    0.5031     3755     939
+      XGBoost    0.8440     0.2727   0.5735    0.4925     3755     939
+NeuralNetwork    0.7206     0.4106   0.5022    0.5379     3755     939
+
+================================================================================
+MODEL COMPARISON COMPREHENSIVE REPORT
+================================================================================
+Generated: 2025-11-25 12:11:33
+
+--------------------------------------------------------------------------------
+CROSS-VALIDATION RESULTS
+--------------------------------------------------------------------------------
+Best Model (CV): RandomForest (Test R² = 0.575)
+
+CV Performance Metrics:
+        Model  Train_R2  Train_MAE  Train_RMSE  Test_R2  Test_MAE  Test_RMSE
+          SVR     0.717      0.354       0.573    0.560     0.493      0.715
+ RandomForest     0.819      0.306       0.458    0.575     0.497      0.702
+      XGBoost     0.829      0.295       0.445    0.573     0.498      0.704
+NeuralNetwork     0.590      0.511       0.691    0.462     0.582      0.790
+
+Overfitting Analysis (CV):
+  SVR            : Train R²=0.717, Test R²=0.560, Gap=0.157 (High overfitting)
+  RandomForest   : Train R²=0.819, Test R²=0.575, Gap=0.244 (High overfitting)
+  XGBoost        : Train R²=0.829, Test R²=0.573, Gap=0.256 (High overfitting)
+  NeuralNetwork  : Train R²=0.590, Test R²=0.462, Gap=0.127 (Moderate)
+
+--------------------------------------------------------------------------------
+HOLDOUT VALIDATION RESULTS (Full Data Split)
+--------------------------------------------------------------------------------
+Best Model (Holdout): XGBoost (Test R² = 0.5735)
+
+Holdout Performance Metrics:
+        Model  Train_R2  Train_MAE  Train_RMSE  Test_R2  Test_MAE  Test_RMSE
+          SVR    0.7218     0.3522      0.5687   0.5658    0.4865     0.7096
+ RandomForest    0.8278     0.3001      0.4475   0.5630    0.5031     0.7119
+      XGBoost    0.8440     0.2727      0.4259   0.5735    0.4925     0.7033
+NeuralNetwork    0.7206     0.4106      0.5700   0.5022    0.5379     0.7598
+
+Overfitting Analysis (Holdout):
+  SVR            : Train R²=0.722, Test R²=0.566, Gap=0.156 (High overfitting)
+  RandomForest   : Train R²=0.828, Test R²=0.563, Gap=0.265 (High overfitting)
+  XGBoost        : Train R²=0.844, Test R²=0.574, Gap=0.270 (High overfitting)
+  NeuralNetwork  : Train R²=0.721, Test R²=0.502, Gap=0.218 (High overfitting)
+
+--------------------------------------------------------------------------------
+CV vs HOLDOUT COMPARISON
+--------------------------------------------------------------------------------
+  SVR            : CV Test R²=0.560, Holdout Test R²=0.566, Diff=+0.006
+  RandomForest   : CV Test R²=0.575, Holdout Test R²=0.563, Diff=-0.012
+  XGBoost        : CV Test R²=0.573, Holdout Test R²=0.574, Diff=+0.001
+  NeuralNetwork  : CV Test R²=0.462, Holdout Test R²=0.502, Diff=+0.040
+
+================================================================================
+
+********************************************************************************
+SAVED FILES SUMMARY
+********************************************************************************
+
+1. MODELS (.joblib files):
+   wDuplicates_SVR_regr_pred.joblib
+   wDuplicates_SVR_macaw_model.joblib
+   wDuplicates_RandomForest_regr_pred.joblib
+   wDuplicates_RandomForest_macaw_model.joblib
+   wDuplicates_XGBoost_regr_pred.joblib
+   wDuplicates_XGBoost_macaw_model.joblib
+   wDuplicates_NeuralNetwork_regr_pred.joblib
+   wDuplicates_NeuralNetwork_macaw_model.joblib
+   wDuplicates_NeuralNetwork_scaler.joblib
+
+2. CROSS-VALIDATION PREDICTIONS:
+   wDuplicates_predictions_test_*.csv
+   wDuplicates_predictions_train_*.csv
+
+3. HOLDOUT VALIDATION PREDICTIONS:
+   wDuplicates_predictions_fullData_train_*.csv
+   wDuplicates_predictions_fullData_test_*.csv
+
+4. METRICS:
+   wDuplicates_metrics_summary.csv
+   wDuplicates_fullData_metrics.csv
+
+5. FEATURE IMPORTANCES:
+   wDuplicates_RandomForest_feature_importances.csv
+   wDuplicates_XGBoost_feature_importances.csv
+
+6. COMPREHENSIVE REPORT:
+   wDuplicates_comprehensive_report.txt
+
+********************************************************************************
+COMPLETED in 4327.4s (72.1 minutes)
+All results saved to: .
+  [Memory final]: 0.80 GB
+********************************************************************************

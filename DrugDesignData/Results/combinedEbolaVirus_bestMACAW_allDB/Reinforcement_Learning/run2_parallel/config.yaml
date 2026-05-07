@@ -1,0 +1,137 @@
+# Run with: python runRL_multiobjective.py config_multiobjective.yaml
+
+project_paths:
+  doranet_path: /users/sghosh6/DTRA_project/MACAW/doranet
+  art_path: /users/sghosh6/DTRA_project/MACAW/AutomatedRecommendationTool
+  extra_python_paths: [., ..]
+
+output:
+  output_dir: RL_outputs_multiobjective
+
+mode:
+  run_smoke_tests: false
+  smoke_test_n: 2
+
+seed:
+  seed_csv: /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB/combinedEbolaVirus_potency_coreToxicity_top20_DORAnetGenerated_Antivirals.csv
+  smiles_col: SMILES
+  max_seeds: null
+  priority_col: OverallPriority2D
+  required_columns: [SMILES, pPotency_prediction, pPotency_std, pPotency_lower_95CI, pPotency_upper_95CI, coreToxicityScore, ToxicitySafety, OverallPriority2D, QED]
+
+macaw:
+  transformer_path: /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB/combinedEbolaVirusData_allDB_MACAW_transformer.joblib
+
+art:
+  model_path: /users/sghosh6/DTRA_project/MACAW/DTRA_ART/ART_CommandLine/Ebola_allDB/ART_results/art.cpkl
+  output_dir: /users/sghosh6/DTRA_project/MACAW/DTRA_ART/ART_CommandLine/Ebola_allDB/ART_results
+  input_feature_prefix: MACAW_
+
+toxicity:
+  reference_scored_csv: RL_outputs_test/reference_admet_scored.csv
+  weight_csv: RL_outputs_test/endpoint_weights.csv
+  reference_input_csv: /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB/combinedEbolaVirusData_FDA_approved_Antivirals_ARTprediction.csv
+  reference_smiles_col: smiles
+  max_reference_rows: 25
+  endpoint_meta_csv: null
+
+doranet:
+  ruleset: JN3604IMT
+  gen: 1
+  max_actions: 24
+  job_prefix: rl_tmp
+  max_atoms: {C: 41, N: 9, O: 12, S: 0}
+
+rl:
+  max_steps: 3
+  max_actions: 24
+  fingerprint_bits: 2048
+
+reward:
+  potencyTarget: 5.50
+  toxicityTarget: 0.20
+  qedTarget: 0.45
+  potencyStdRef: 0.25
+  potencyScale: 0.20
+  toxicityScale: 0.08
+  qedScale: 0.05
+  routeDepthPenalty: 0.10
+
+multi_objective:
+  enabled: true
+  preference_sets:
+    potency_focused:
+      potency: 0.55
+      toxicity: 0.25
+      qed: 0.10
+      route: 0.02
+      uncertainty: 0.08
+    balanced:
+      potency: 0.40
+      toxicity: 0.40
+      qed: 0.08
+      route: 0.02
+      uncertainty: 0.10
+    safety_focused:
+      potency: 0.25
+      toxicity: 0.55
+      qed: 0.08
+      route: 0.02
+      uncertainty: 0.10
+    conservative:
+      potency: 0.35
+      toxicity: 0.35
+      qed: 0.08
+      route: 0.02
+      uncertainty: 0.20
+
+pareto:
+  enabled: true
+  initialize_with_seeds: true
+  non_dominated_bonus: 0.08
+  dominated_penalty: 0.08
+  annotated_output_csv: rl_multiobjective_candidates_with_pareto.csv
+  front_output_csv: rl_multiobjective_pareto_front.csv
+  ranked_front_output_csv: rl_multiobjective_pareto_front_ranked.csv
+  objectives:
+    pPotency_prediction: maximize
+    coreToxicityScore: minimize
+    QED: maximize
+    pPotency_std: minimize
+  ranking:
+    enabled: true
+    method: percentile
+    pPotency_prediction: 0.40
+    coreToxicityScore: 0.40
+    pPotency_std: 0.15
+    QED: 0.05
+
+training:
+  enabled: true
+  total_timesteps: 50000
+  policy: MlpPolicy
+  learning_rate: 0.0003
+  n_steps: 512
+  batch_size: 64
+  gamma: 0.95
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.04
+  verbose: 1
+
+
+performance:
+  # Run ART and ADMET-tox scoring in parallel threads (within scoreBatch).
+  # If you get crashes/overload, set to 1.
+  oracle_parallelism: 2
+
+rollout:
+  enabled: true
+  num_episodes_per_policy: 3000
+  deterministic: false
+  terminal_scoring_mode: deferred     # immediate | deferred
+  final_score_batch_size: 512        # batch size for scoring unique final SMILES
+
+plotting:
+  enabled: true
+  output_png: rl_multiobjective_generated_vs_seed_potency_toxicity.png
