@@ -1,37 +1,62 @@
 #!/usr/bin/env python
+"""
+Run one DORAnet generation from a starter CSV.
 
-import sys
-import os
+Designed workflow:
+  python runDORAnet.py -c config_gen1.yaml > DORAnet_gen1.out
+  python runDORAnet.py -c config_gen2.yaml > DORAnet_gen2.out
+  python runDORAnet.py -c config_gen3.yaml > DORAnet_gen3.out
+
+Key behavior:
+  - Each config runs exactly one DORAnet generation.
+  - Every run starts fresh from the input starter CSV.
+  - Every starter gets its own starter_* directory.
+  - Every starter gets its own max_atoms dictionary computed from that starter only:
+        max_atoms[element] = ceil(multiplier * count(element in starter))
+    for elements C, N, O, S by default.
+  - The starter-specific resolved config is saved inside each starter_* directory.
+"""
+
 import argparse
-import time
-import csv
 import copy
+import csv
+import json
 import math
-from pathlib import Path
+import os
+import shutil
+import sys
+import time
 from multiprocessing import Process, Queue, cpu_count
+from pathlib import Path
 
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
-from rdkit import RDLogger
 import yaml
+from rdkit import Chem, RDLogger
+from rdkit.Chem import rdMolDescriptors
 
-RDLogger.DisableLog('rdApp.*')
+RDLogger.DisableLog("rdApp.*")
 
 # Update this path only if your DORAnet checkout is elsewhere.
-DORANET_PATH = Path("/users/sghosh6/DTRA_project/MACAW/doranet")
+# You can also override it without editing the script:
+#   export DORANET_PATH=/path/to/doranet
+DORANET_PATH = Path(os.environ.get("DORANET_PATH", "/users/sghosh6/DTRA_project/MACAW/doranet"))
 sys.path.insert(0, str(DORANET_PATH))
 
 import doranet.modules.enzymatic as enzymatic
 import doranet.modules.post_processing as post_processing
 
+
 HELPERS = {
-    'O', 'O=O', '[H][H]', 'O=C=O', 'C=O', '[C-]#[O+]', 'Br', '[Br][Br]',
-    'CO', 'C=C', 'O=S(O)O', 'N', 'O=S(=O)(O)O', 'O=NO', 'N#N',
-    'O=[N+]([O-])O', 'NO', 'C#N', 'S', 'O=S=O', 'N#CO', '[H+]', 'OO',
-    'Cl', 'I', 'O=C(O)O', 'O=P(O)(O)O', 'O=P(O)(O)OP(=O)(O)O', 'C',
-    'CC', 'CC=O', 'CC(=O)O', 'CCC(=O)O'
+    "O", "O=O", "[H][H]", "O=C=O", "C=O", "[C-]#[O+]", "Br", "[Br][Br]",
+    "CO", "C=C", "O=S(O)O", "N", "O=S(=O)(O)O", "O=NO", "N#N",
+    "O=[N+]([O-])O", "NO", "C#N", "S", "O=S=O", "N#CO", "[H+]", "OO",
+    "Cl", "I", "O=C(O)O", "O=P(O)(O)O", "O=P(O)(O)OP(=O)(O)O", "C",
+    "CC", "CC=O", "CC(=O)O", "CCC(=O)O",
 }
 
+
+# -----------------------------
+# Configuration helpers
+# -----------------------------
 
 def deepUpdate(defaultDict, userDict):
     """Recursively merge user config into defaults."""
@@ -59,90 +84,95 @@ def loadConfig(configPath):
         "input": {
             "SMILESfile": None,
             "smiles_column": "Canonical_SMILES",
+            "smiles_column_candidates": [
+                "Canonical_SMILES",
+                "canonical_smiles",
+                "SMILES",
+                "Smiles",
+                "smiles",
+            ],
             "start_index": 0,
             "num_smiles": None,
+            "deduplicate_smiles": False,
         },
         "output": {
             "directory": "doranet_output",
-            # Final folders become, for example: doranet_output_gen1, doranet_output_gen2, ...
-            "generation_suffix_template": "_gen{gen}",
-            "write_combined_summary": True,
+            "overwrite_existing_output_dir": True,
+            "overwrite_existing_starter_dirs": True,
+            "save_generation_config": True,
+            "save_starter_config": True,
         },
         "parallel": {
             "num_workers": 4,
-            "result_timeout_seconds": 600,
-            "join_timeout_seconds": 60,
         },
         "network": {
-            # Can be either a single integer, e.g. 2, or a list, e.g. [1, 2, 3].
-            "generations": [1, 2, 3],
+            # Single integer only. Use config_gen1, config_gen2, config_gen3 separately.
+            "generations": 1,
             "ruleset": "JN3604IMT",
             "direction": "forward",
         },
         "max_atoms": {
-            # auto_from_starters computes per-element max atoms from the starter SMILES set.
-            # static uses explicit values from max_atoms.static_values.
-            "mode": "auto_from_starters",
+            "mode": "per_starter",
             "elements": ["C", "N", "O", "S"],
             "multiplier": 1.5,
             "rounding": "ceil",
-            "minimum": {"C": 1, "N": 0, "O": 0, "S": 0},
-            "static_values": {"C": 12, "N": 3, "O": 5, "S": 3},
+            # Keep all default minima at zero so no extra atom type is allowed unless
+            # it is present in the starter molecule. This follows the requested logic.
+            "minimum": {"C": 0, "N": 0, "O": 0, "S": 0},
+        },
+        "validation": {
+            "fail_on_invalid_smiles": True,
+            "expected_num_starters": None,
+        },
+        "post_processing": {
+            "run_one_step": True,
         },
     }
 
     return deepUpdate(defaults, userConfig)
 
 
-def normalizeGenerations(generations):
-    if isinstance(generations, int):
-        generationsList = [generations]
-    elif isinstance(generations, list):
-        generationsList = generations
-    else:
-        raise ValueError("network.generations must be an integer or a list of integers")
-
-    cleaned = []
-    for gen in generationsList:
-        try:
-            genInt = int(gen)
-        except Exception as exc:
-            raise ValueError(f"Invalid generation value: {gen}") from exc
-
-        if genInt < 1:
-            raise ValueError("All network.generations values must be >= 1")
-        cleaned.append(genInt)
-
-    return sorted(set(cleaned))
-
-
 def validateConfig(config):
     errors = []
 
-    if not config["input"]["SMILESfile"]:
+    inputFile = config["input"].get("SMILESfile")
+    if not inputFile:
         errors.append("input.SMILESfile is required")
-    elif not os.path.exists(config["input"]["SMILESfile"]):
-        errors.append(f"Input file not found: {config['input']['SMILESfile']}")
-
-    if int(config["parallel"]["num_workers"]) < 1:
-        errors.append("parallel.num_workers must be at least 1")
+    elif not os.path.exists(inputFile):
+        errors.append(f"Input file not found: {inputFile}")
 
     try:
-        normalizeGenerations(config["network"]["generations"])
-    except ValueError as exc:
-        errors.append(str(exc))
+        config["network"]["generations"] = int(config["network"]["generations"])
+        if config["network"]["generations"] < 1:
+            errors.append("network.generations must be >= 1")
+    except Exception:
+        errors.append("network.generations must be a single integer, not a list")
 
-    maxAtomsMode = config["max_atoms"].get("mode", "auto_from_starters")
-    if maxAtomsMode not in {"auto_from_starters", "static"}:
-        errors.append("max_atoms.mode must be either 'auto_from_starters' or 'static'")
+    try:
+        config["parallel"]["num_workers"] = int(config["parallel"]["num_workers"])
+        if config["parallel"]["num_workers"] < 1:
+            errors.append("parallel.num_workers must be at least 1")
+    except Exception:
+        errors.append("parallel.num_workers must be an integer")
 
-    multiplier = float(config["max_atoms"].get("multiplier", 1.5))
-    if multiplier <= 0:
-        errors.append("max_atoms.multiplier must be > 0")
+    if config["max_atoms"].get("mode") != "per_starter":
+        errors.append("max_atoms.mode must be 'per_starter' for this workflow")
+
+    try:
+        multiplier = float(config["max_atoms"].get("multiplier", 1.5))
+        if multiplier <= 0:
+            errors.append("max_atoms.multiplier must be > 0")
+        config["max_atoms"]["multiplier"] = multiplier
+    except Exception:
+        errors.append("max_atoms.multiplier must be numeric")
 
     rounding = config["max_atoms"].get("rounding", "ceil")
     if rounding not in {"ceil", "floor", "round"}:
         errors.append("max_atoms.rounding must be one of: ceil, floor, round")
+
+    elements = config["max_atoms"].get("elements", ["C", "N", "O", "S"])
+    if not isinstance(elements, list) or not elements:
+        errors.append("max_atoms.elements must be a non-empty list")
 
     if errors:
         print("Configuration errors:")
@@ -150,43 +180,64 @@ def validateConfig(config):
             print(f"  - {err}")
         sys.exit(1)
 
-    config["parallel"]["num_workers"] = min(
-        int(config["parallel"]["num_workers"]),
-        cpu_count(),
-    )
-    config["parallel"]["result_timeout_seconds"] = int(
-        config["parallel"].get("result_timeout_seconds", 600)
-    )
-    config["parallel"]["join_timeout_seconds"] = int(
-        config["parallel"].get("join_timeout_seconds", 60)
-    )
-
-    config["network"]["generations"] = normalizeGenerations(config["network"]["generations"])
-
+    config["parallel"]["num_workers"] = min(config["parallel"]["num_workers"], cpu_count())
     return config
 
 
-def readSmilesFromCsv(csvPath, smilesColumn, startIdx, numSmiles):
+# -----------------------------
+# Input and chemistry helpers
+# -----------------------------
+
+def chooseSmilesColumn(fieldnames, preferredColumn, candidateColumns):
+    if preferredColumn in fieldnames:
+        return preferredColumn
+
+    for col in candidateColumns:
+        if col in fieldnames:
+            print(
+                f"Warning: configured smiles_column '{preferredColumn}' was not found. "
+                f"Using detected column '{col}' instead."
+            )
+            return col
+
+    available = ", ".join(fieldnames or [])
+    raise ValueError(
+        f"Could not find a SMILES column. Requested '{preferredColumn}'. "
+        f"Available columns: {available}"
+    )
+
+
+def readSmilesFromCsv(csvPath, smilesColumn, startIdx, numSmiles, candidateColumns, deduplicate=False):
     smilesList = []
+    seen = set()
 
-    with open(csvPath, "r") as f:
+    with open(csvPath, "r", newline="") as f:
         reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames or []
+        resolvedColumn = chooseSmilesColumn(fieldnames, smilesColumn, candidateColumns)
 
-        if smilesColumn not in reader.fieldnames:
-            available = ", ".join(reader.fieldnames or [])
-            raise ValueError(f"Column '{smilesColumn}' not found. Available: {available}")
-
-        for idx, row in enumerate(reader):
-            if idx < int(startIdx):
+        for rowIdx, row in enumerate(reader):
+            if rowIdx < int(startIdx):
                 continue
             if numSmiles is not None and len(smilesList) >= int(numSmiles):
                 break
 
-            smi = row.get(smilesColumn, "")
-            if smi and smi.strip():
-                smilesList.append(smi.strip())
+            smi = (row.get(resolvedColumn, "") or "").strip()
+            if not smi:
+                continue
 
-    return smilesList
+            if deduplicate:
+                if smi in seen:
+                    continue
+                seen.add(smi)
+
+            smilesList.append({
+                "row_index": rowIdx,
+                "starter_idx": len(smilesList),
+                "starter_smiles": smi,
+            })
+
+    return smilesList, resolvedColumn
 
 
 def countAtomsForElements(smiles, elements):
@@ -212,97 +263,179 @@ def applyRounding(value, roundingMode):
     raise ValueError(f"Unsupported rounding mode: {roundingMode}")
 
 
-def computeMaxAtomsFromStarters(smilesList, maxAtomsConfig):
-    """
-    Compute DORAnet max_atoms from the highest C/N/O/S atom counts in the starter set.
-
-    Example:
-      If the largest carbon count across all starter molecules is 10 and multiplier is 1.5,
-      max_atoms['C'] becomes ceil(10 * 1.5) = 15.
-    """
+def computeStarterMaxAtoms(starterSmiles, maxAtomsConfig):
     elements = list(maxAtomsConfig.get("elements", ["C", "N", "O", "S"]))
     multiplier = float(maxAtomsConfig.get("multiplier", 1.5))
     roundingMode = maxAtomsConfig.get("rounding", "ceil")
     minimum = maxAtomsConfig.get("minimum", {}) or {}
 
-    maxStarterCounts = {element: 0 for element in elements}
-    invalidSmiles = []
-
-    for smi in smilesList:
-        counts = countAtomsForElements(smi, elements)
-        if counts is None:
-            invalidSmiles.append(smi)
-            continue
-
-        for element in elements:
-            maxStarterCounts[element] = max(maxStarterCounts[element], counts[element])
-
-    if len(invalidSmiles) == len(smilesList):
-        raise ValueError("All starter SMILES failed RDKit parsing; cannot compute auto max_atoms")
+    atomCounts = countAtomsForElements(starterSmiles, elements)
+    if atomCounts is None:
+        return None, None
 
     maxAtoms = {}
     for element in elements:
-        scaled = applyRounding(maxStarterCounts[element] * multiplier, roundingMode)
+        scaled = applyRounding(atomCounts[element] * multiplier, roundingMode)
         minVal = int(minimum.get(element, 0))
         maxAtoms[element] = max(scaled, minVal)
 
-    return maxAtoms, maxStarterCounts, invalidSmiles
+    return maxAtoms, atomCounts
 
 
-def resolveMaxAtoms(smilesList, config):
-    maxAtomsConfig = config["max_atoms"]
-    mode = maxAtomsConfig.get("mode", "auto_from_starters")
+# -----------------------------
+# Output preparation
+# -----------------------------
 
-    if mode == "static":
-        staticValues = maxAtomsConfig.get("static_values", {})
-        return {key: int(value) for key, value in staticValues.items()}, None, []
-
-    return computeMaxAtomsFromStarters(smilesList, maxAtomsConfig)
-
-
-def makeGenerationOutputDir(baseOutputDir, suffixTemplate, gen):
-    baseOutputDir = str(baseOutputDir).rstrip("/")
-    suffix = suffixTemplate.format(gen=gen)
-    return Path(f"{baseOutputDir}{suffix}")
+def prepareOutputDirectory(outputDir, overwriteExisting):
+    outputPath = Path(outputDir)
+    if outputPath.exists() and overwriteExisting:
+        shutil.rmtree(outputPath)
+    outputPath.mkdir(parents=True, exist_ok=True)
+    return outputPath
 
 
-def printConfig(config, maxStarterCounts=None):
-    print("-" * 70)
-    print("CONFIGURATION")
-    print("-" * 70)
-    print(f"Input file: {config['input']['SMILESfile']}")
-    print(f"SMILES column: {config['input']['smiles_column']}")
-    print(f"Start index: {config['input']['start_index']}")
-    print(f"Number to process: {config['input']['num_smiles'] or 'all'}")
-    print(f"Base output directory: {config['output']['directory']}")
-    print(f"Generation suffix template: {config['output']['generation_suffix_template']}")
-    print(f"Workers: {config['parallel']['num_workers']}")
-    print(f"Generations to run: {config['network']['generations']}")
-    print(f"Ruleset: {config['network']['ruleset']}")
-    print(f"Direction: {config['network']['direction']}")
-    print(f"Max atoms mode: {config['max_atoms'].get('mode')}")
-    print(f"Resolved max atoms: {config['resolved_max_atoms']}")
-    if maxStarterCounts is not None:
-        print(f"Max starter atom counts: {maxStarterCounts}")
-    print("-" * 70)
+def saveYaml(data, outputPath):
+    with open(outputPath, "w") as f:
+        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
 
 
-def processSingleStarter(starterIdx, starterSmiles, config):
-    """
-    Process one starter molecule for one generation setting.
-    """
-    gen = int(config["network"]["active_generation"])
-    jobName = f"starter_{starterIdx:05d}_gen{gen}"
-    jobOutputDir = Path(config["output"]["directory"]) / f"starter_{starterIdx:05d}"
-    jobOutputDir.mkdir(parents=True, exist_ok=True)
+def buildStarterConfig(baseConfig, starterRecord):
+    starterConfig = copy.deepcopy(baseConfig)
+    starterConfig["starter"] = {
+        "starter_idx": starterRecord["starter_idx"],
+        "input_csv_row_index": starterRecord["row_index"],
+        "starter_smiles": starterRecord["starter_smiles"],
+        "job_name": starterRecord["job_name"],
+        "starter_output_directory": starterRecord["starter_dir"],
+        "atom_counts": starterRecord["atom_counts"],
+        "resolved_max_atoms": starterRecord["max_atoms"],
+    }
+    starterConfig["resolved_max_atoms"] = starterRecord["max_atoms"]
+    return starterConfig
 
-    originalDir = os.getcwd()
-    os.chdir(jobOutputDir)
+
+def prepareStarterDirectories(smilesRecords, config):
+    outputDir = Path(config["output"]["directory"])
+    gen = int(config["network"]["generations"])
+    starterRecords = []
+    invalidRecords = []
+
+    for record in smilesRecords:
+        starterIdx = int(record["starter_idx"])
+        starterSmiles = record["starter_smiles"]
+        starterName = f"starter_{starterIdx:05d}"
+        jobName = f"{starterName}_gen{gen}"
+        starterDir = outputDir / starterName
+
+        if starterDir.exists() and config["output"].get("overwrite_existing_starter_dirs", True):
+            shutil.rmtree(starterDir)
+        starterDir.mkdir(parents=True, exist_ok=True)
+
+        maxAtoms, atomCounts = computeStarterMaxAtoms(starterSmiles, config["max_atoms"])
+        if maxAtoms is None:
+            invalidRecord = {
+                **record,
+                "starter_dir": str(starterDir),
+                "job_name": jobName,
+                "error": "RDKit failed to parse starter SMILES; cannot compute per-starter max_atoms",
+            }
+            invalidRecords.append(invalidRecord)
+            continue
+
+        starterRecord = {
+            **record,
+            "starter_dir": str(starterDir),
+            "job_name": jobName,
+            "atom_counts": atomCounts,
+            "max_atoms": maxAtoms,
+        }
+
+        if config["output"].get("save_starter_config", True):
+            starterConfig = buildStarterConfig(config, starterRecord)
+            configPath = starterDir / "config_used.yaml"
+            saveYaml(starterConfig, configPath)
+            starterRecord["starter_config_path"] = str(configPath)
+
+        starterRecords.append(starterRecord)
+
+    if invalidRecords and config["validation"].get("fail_on_invalid_smiles", True):
+        invalidPath = outputDir / "invalid_starters.csv"
+        with open(invalidPath, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["starter_idx", "row_index", "starter_smiles", "starter_dir", "job_name", "error"])
+            for r in invalidRecords:
+                writer.writerow([
+                    r["starter_idx"],
+                    r["row_index"],
+                    r["starter_smiles"],
+                    r["starter_dir"],
+                    r["job_name"],
+                    r["error"],
+                ])
+        raise ValueError(
+            f"Found {len(invalidRecords)} invalid starter SMILES. Details saved to {invalidPath}"
+        )
+
+    return starterRecords, invalidRecords
+
+
+def saveStarterPreparationSummary(starterRecords, outputDir):
+    summaryPath = Path(outputDir) / "starter_preparation_summary.csv"
+    with open(summaryPath, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "generation",
+            "starter_idx",
+            "input_csv_row_index",
+            "starter_smiles",
+            "starter_directory",
+            "job_name",
+            "atom_counts_json",
+            "max_atoms_json",
+            "starter_config_path",
+        ])
+        for r in starterRecords:
+            writer.writerow([
+                r.get("generation"),
+                r["starter_idx"],
+                r["row_index"],
+                r["starter_smiles"],
+                r["starter_dir"],
+                r["job_name"],
+                json.dumps(r["atom_counts"], sort_keys=True),
+                json.dumps(r["max_atoms"], sort_keys=True),
+                r.get("starter_config_path", ""),
+            ])
+    return summaryPath
+
+
+def saveGenerationConfig(config, outputDir):
+    generationConfigPath = Path(outputDir) / "config_generation_used.yaml"
+    saveYaml(config, generationConfigPath)
+    return generationConfigPath
+
+
+# -----------------------------
+# DORAnet execution
+# -----------------------------
+
+def processSingleStarter(starterRecord, config):
+    starterIdx = int(starterRecord["starter_idx"])
+    starterSmiles = starterRecord["starter_smiles"]
+    starterDir = Path(starterRecord["starter_dir"])
+    jobName = starterRecord["job_name"]
+    gen = int(config["network"]["generations"])
+    maxAtoms = starterRecord["max_atoms"]
 
     result = {
         "generation": gen,
         "starter_idx": starterIdx,
+        "input_csv_row_index": starterRecord["row_index"],
         "starter_smiles": starterSmiles,
+        "starter_directory": str(starterDir),
+        "job_name": jobName,
+        "atom_counts": starterRecord["atom_counts"],
+        "max_atoms": maxAtoms,
         "status": "failed",
         "num_molecules": 0,
         "num_targets": 0,
@@ -311,15 +444,17 @@ def processSingleStarter(starterIdx, starterSmiles, config):
     }
 
     startTime = time.time()
+    originalDir = os.getcwd()
 
     try:
+        os.chdir(starterDir)
         userStarters = {starterSmiles}
 
         forwardNetwork = enzymatic.generate_network(
             job_name=jobName,
             starters=userStarters,
             gen=gen,
-            max_atoms=config["resolved_max_atoms"],
+            max_atoms=maxAtoms,
             direction=config["network"]["direction"],
             ruleset=config["network"]["ruleset"],
         )
@@ -333,13 +468,7 @@ def processSingleStarter(starterIdx, starterSmiles, config):
         outputPath = Path(f"{jobName}_molecules.csv")
         with open(outputPath, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow([
-                "SMILES",
-                "Is_Starter",
-                "MolFormula",
-                "MolWeight",
-                "NumHeavyAtoms",
-            ])
+            writer.writerow(["SMILES", "Is_Starter", "MolFormula", "MolWeight", "NumHeavyAtoms"])
             for smi in generatedSmilesList:
                 mol = Chem.MolFromSmiles(smi)
                 if mol:
@@ -350,7 +479,7 @@ def processSingleStarter(starterIdx, starterSmiles, config):
                     formula, molWeight, numHeavy = "N/A", 0, 0
                 writer.writerow([smi, smi in userStarters, formula, molWeight, numHeavy])
 
-        if allTargets:
+        if allTargets and config.get("post_processing", {}).get("run_one_step", True):
             post_processing.one_step(
                 networks={forwardNetwork},
                 total_generations=gen,
@@ -370,57 +499,58 @@ def processSingleStarter(starterIdx, starterSmiles, config):
         os.chdir(originalDir)
 
     result["time_seconds"] = round(time.time() - startTime, 2)
-
     return result
 
 
 def workerProcess(workerId, taskQueue, resultQueue, config, totalTasks):
     while True:
-        task = taskQueue.get()
-        if task is None:
+        starterRecord = taskQueue.get()
+        if starterRecord is None:
             break
 
-        starterIdx, starterSmiles = task
-        result = processSingleStarter(starterIdx, starterSmiles, config)
+        result = processSingleStarter(starterRecord, config)
 
-        displayStarterIdx = starterIdx + 1
+        displayStarterIdx = int(starterRecord["starter_idx"]) + 1
         displayWorkerId = workerId + 1
-        gen = config["network"]["active_generation"]
+        gen = int(config["network"]["generations"])
 
         print(
             f"[Gen {gen}] [Worker {displayWorkerId}] "
             f"[{displayStarterIdx:05d}/{totalTasks:05d}] "
             f"{result['status'].upper()} | "
+            f"max_atoms={result['max_atoms']} | "
             f"Molecules: {result['num_molecules']} | "
             f"Targets: {result['num_targets']} | "
             f"Time: {result['time_seconds']}s | "
-            f"SMILES: {starterSmiles[:40]}..."
+            f"SMILES: {result['starter_smiles'][:40]}...",
+            flush=True,
         )
 
         resultQueue.put(result)
 
 
-def runParallelProcessing(smilesList, config):
-    numWorkers = config["parallel"]["num_workers"]
-    totalTasks = len(smilesList)
-    gen = config["network"]["active_generation"]
+def runParallelProcessing(starterRecords, config):
+    numWorkers = int(config["parallel"]["num_workers"])
+    totalTasks = len(starterRecords)
+    gen = int(config["network"]["generations"])
 
-    print("\nStarting parallel processing")
+    print("\nStarting parallel DORAnet processing")
     print(f"  Generation: {gen}")
     print(f"  Output directory: {config['output']['directory']}")
-    print(f"  Total SMILES: {totalTasks}")
+    print(f"  Total starters: {totalTasks}")
     print(f"  Workers: {numWorkers}")
-    print(f"  Max atoms: {config['resolved_max_atoms']}")
-    print("-" * 70)
+    print("  Result collection: waits for all starters; no runtime cutoff is applied by this script")
+    print("-" * 70, flush=True)
 
     taskQueue = Queue()
-    for idx, smi in enumerate(smilesList):
-        taskQueue.put((idx, smi))
+    resultQueue = Queue()
+
+    for starterRecord in starterRecords:
+        taskQueue.put(starterRecord)
 
     for _ in range(numWorkers):
         taskQueue.put(None)
 
-    resultQueue = Queue()
     workers = []
     for workerId in range(numWorkers):
         p = Process(
@@ -432,86 +562,82 @@ def runParallelProcessing(smilesList, config):
         p.start()
 
     results = []
-    timeoutSeconds = int(config["parallel"].get("result_timeout_seconds", 600))
+    # No timeout here. This intentionally allows long gen=3 DORAnet jobs to run.
     for _ in range(totalTasks):
-        try:
-            result = resultQueue.get(timeout=timeoutSeconds)
-            results.append(result)
-        except Exception as exc:
-            print(f"Warning: Timeout or error collecting result: {exc}")
-            break
+        result = resultQueue.get()
+        results.append(result)
 
-    joinTimeout = int(config["parallel"].get("join_timeout_seconds", 60))
     for p in workers:
-        p.join(timeout=joinTimeout)
-        if p.is_alive():
-            print(f"Warning: Worker {p.pid} did not exit cleanly, terminating...")
-            p.terminate()
-            p.join(timeout=10)
+        p.join()
 
     results.sort(key=lambda x: x["starter_idx"])
-    print(f"\nCollected {len(results)} / {totalTasks} results for gen {gen}")
-
+    print(f"\nCollected {len(results)} / {totalTasks} results for gen {gen}", flush=True)
     return results
 
 
+# -----------------------------
+# Summary reporting
+# -----------------------------
+
 def saveSummary(results, outputDir):
     summaryPath = Path(outputDir) / "processing_summary.csv"
-
     with open(summaryPath, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
             "generation",
             "starter_idx",
+            "input_csv_row_index",
             "starter_smiles",
+            "starter_directory",
+            "job_name",
+            "atom_counts_json",
+            "max_atoms_json",
             "status",
             "num_molecules",
             "num_targets",
             "time_seconds",
             "error",
         ])
-
         for r in results:
             writer.writerow([
                 r["generation"],
                 r["starter_idx"],
+                r["input_csv_row_index"],
                 r["starter_smiles"],
+                r["starter_directory"],
+                r["job_name"],
+                json.dumps(r["atom_counts"], sort_keys=True),
+                json.dumps(r["max_atoms"], sort_keys=True),
                 r["status"],
                 r["num_molecules"],
                 r["num_targets"],
                 r["time_seconds"],
                 r["error"] or "",
             ])
-
     return summaryPath
 
 
-def saveCombinedSummary(allResults, outputDir):
-    combinedPath = Path(outputDir) / "processing_summary_all_generations.csv"
-    with open(combinedPath, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            "generation",
-            "starter_idx",
-            "starter_smiles",
-            "status",
-            "num_molecules",
-            "num_targets",
-            "time_seconds",
-            "error",
-        ])
-        for result in allResults:
-            writer.writerow([
-                result["generation"],
-                result["starter_idx"],
-                result["starter_smiles"],
-                result["status"],
-                result["num_molecules"],
-                result["num_targets"],
-                result["time_seconds"],
-                result["error"] or "",
-            ])
-    return combinedPath
+def printConfig(config, resolvedSmilesColumn):
+    print("=" * 70)
+    print("CONFIGURATION")
+    print("=" * 70)
+    print(f"DORANET_PATH: {DORANET_PATH}")
+    print(f"Input file: {config['input']['SMILESfile']}")
+    print(f"SMILES column used: {resolvedSmilesColumn}")
+    print(f"Start index: {config['input']['start_index']}")
+    print(f"Number to process: {config['input']['num_smiles'] or 'all'}")
+    print(f"Deduplicate SMILES: {config['input'].get('deduplicate_smiles', False)}")
+    print(f"Output directory: {config['output']['directory']}")
+    print(f"Overwrite output directory: {config['output'].get('overwrite_existing_output_dir', True)}")
+    print(f"Workers: {config['parallel']['num_workers']}")
+    print(f"Generation: {config['network']['generations']}")
+    print(f"Ruleset: {config['network']['ruleset']}")
+    print(f"Direction: {config['network']['direction']}")
+    print(f"Max atoms mode: {config['max_atoms']['mode']}")
+    print(f"Max atoms elements: {config['max_atoms']['elements']}")
+    print(f"Max atoms multiplier: {config['max_atoms']['multiplier']}")
+    print(f"Max atoms rounding: {config['max_atoms']['rounding']}")
+    print("=" * 70, flush=True)
 
 
 def printSummary(results, totalTime):
@@ -523,9 +649,9 @@ def printSummary(results, totalTime):
     avgTime = sum(r["time_seconds"] for r in results) / len(results) if results else 0
     gen = results[0]["generation"] if results else "N/A"
 
-    print("\n" + "-" * 70)
+    print("\n" + "=" * 70)
     print(f"PROCESSING SUMMARY | GEN {gen}")
-    print("-" * 70)
+    print("=" * 70)
     print(f"Total starters processed: {len(results)}")
     print(f"Successful: {len(successful)}")
     print(f"Failed: {len(failed)}")
@@ -536,28 +662,24 @@ def printSummary(results, totalTime):
 
     if failed:
         print("\nFailed starters:")
-        for r in failed[:10]:
-            print(f"  [{r['starter_idx']}] {r['starter_smiles'][:50]}... | Error: {r['error']}")
-        if len(failed) > 10:
-            print(f"  ... and {len(failed) - 10} more")
-
-
-def saveConfigCopy(config, outputDir):
-    configCopyPath = Path(outputDir) / "config_used.yaml"
-    with open(configCopyPath, "w") as f:
-        yaml.dump(config, f, default_flow_style=False, sort_keys=False)
-    return configCopyPath
+        for r in failed[:20]:
+            print(
+                f"  [{r['starter_idx']}] {r['starter_smiles'][:50]}... | "
+                f"max_atoms={r['max_atoms']} | Error: {r['error']}"
+            )
+        if len(failed) > 20:
+            print(f"  ... and {len(failed) - 20} more")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Parallel DORAnet generation loop with auto max_atoms from starter SMILES"
+        description="Run one DORAnet generation with per-starter max_atoms from starter CSV"
     )
     parser.add_argument(
         "-c",
         "--config",
         default="config.yaml",
-        help="Path to configuration YAML file (default: config.yaml)",
+        help="Path to configuration YAML file",
     )
     args = parser.parse_args()
 
@@ -569,80 +691,66 @@ def main():
     config = loadConfig(args.config)
     config = validateConfig(config)
 
-    print("\nReading SMILES from CSV...")
-    smilesList = readSmilesFromCsv(
-        config["input"]["SMILESfile"],
-        config["input"]["smiles_column"],
-        config["input"]["start_index"],
-        config["input"]["num_smiles"],
+    outputDir = prepareOutputDirectory(
+        config["output"]["directory"],
+        config["output"].get("overwrite_existing_output_dir", True),
     )
 
-    if not smilesList:
-        print("Error: No valid SMILES found in input file")
+    print("\nReading starter SMILES from CSV...")
+    smilesRecords, resolvedSmilesColumn = readSmilesFromCsv(
+        csvPath=config["input"]["SMILESfile"],
+        smilesColumn=config["input"].get("smiles_column", "Canonical_SMILES"),
+        startIdx=config["input"].get("start_index", 0),
+        numSmiles=config["input"].get("num_smiles", None),
+        candidateColumns=config["input"].get("smiles_column_candidates", []),
+        deduplicate=bool(config["input"].get("deduplicate_smiles", False)),
+    )
+
+    if not smilesRecords:
+        print("Error: No non-empty starter SMILES found in input file")
         sys.exit(1)
 
-    print(f"Loaded {len(smilesList)} SMILES")
-
-    try:
-        resolvedMaxAtoms, maxStarterCounts, invalidSmiles = resolveMaxAtoms(smilesList, config)
-    except ValueError as exc:
-        print(f"Error while resolving max_atoms: {exc}")
-        sys.exit(1)
-
-    config["resolved_max_atoms"] = resolvedMaxAtoms
-    printConfig(config, maxStarterCounts=maxStarterCounts)
-
-    if invalidSmiles:
-        print(f"Warning: {len(invalidSmiles)} starter SMILES could not be parsed by RDKit for max_atoms calculation.")
-        print("They will still be sent to DORAnet, but they were excluded from the max_atoms baseline.")
-        for smi in invalidSmiles[:10]:
-            print(f"  Invalid for atom counting: {smi}")
-        if len(invalidSmiles) > 10:
-            print(f"  ... and {len(invalidSmiles) - 10} more")
-
-    baseOutputDir = Path(config["output"]["directory"])
-    baseOutputDir.mkdir(parents=True, exist_ok=True)
-
-    allResults = []
-    allStartTime = time.time()
-
-    for gen in config["network"]["generations"]:
-        genConfig = copy.deepcopy(config)
-        genConfig["network"]["active_generation"] = int(gen)
-
-        genOutputDir = makeGenerationOutputDir(
-            baseOutputDir,
-            config["output"].get("generation_suffix_template", "_gen{gen}"),
-            gen,
+    expectedNumStarters = config.get("validation", {}).get("expected_num_starters")
+    if expectedNumStarters is not None and len(smilesRecords) != int(expectedNumStarters):
+        print(
+            f"Error: expected {expectedNumStarters} starters, but loaded {len(smilesRecords)}. "
+            "Check the CSV path, SMILES column, blank rows, and deduplicate_smiles setting."
         )
-        genConfig["output"]["directory"] = str(genOutputDir)
-        genOutputDir.mkdir(parents=True, exist_ok=True)
+        sys.exit(1)
 
-        configCopy = saveConfigCopy(genConfig, genOutputDir)
-        print(f"\nConfiguration for gen {gen} saved to: {configCopy}")
+    config["input"]["resolved_smiles_column"] = resolvedSmilesColumn
+    printConfig(config, resolvedSmilesColumn)
+    print(f"Loaded {len(smilesRecords)} starters from CSV")
 
-        genStartTime = time.time()
-        results = runParallelProcessing(smilesList, genConfig)
-        genTotalTime = time.time() - genStartTime
+    if config["output"].get("save_generation_config", True):
+        generationConfigPath = saveGenerationConfig(config, outputDir)
+        print(f"Generation-level config saved to: {generationConfigPath}")
 
-        summaryPath = saveSummary(results, genOutputDir)
-        print(f"\nSummary for gen {gen} saved to: {summaryPath}")
-        printSummary(results, genTotalTime)
+    print("\nPreparing starter directories and starter-specific max_atoms configs...")
+    try:
+        starterRecords, invalidRecords = prepareStarterDirectories(smilesRecords, config)
+    except ValueError as exc:
+        print(f"Error: {exc}")
+        sys.exit(1)
 
-        allResults.extend(results)
+    gen = int(config["network"]["generations"])
+    for r in starterRecords:
+        r["generation"] = gen
 
-    allTotalTime = time.time() - allStartTime
-    if config["output"].get("write_combined_summary", True):
-        combinedPath = saveCombinedSummary(allResults, baseOutputDir)
-        print(f"\nCombined summary saved to: {combinedPath}")
+    prepSummaryPath = saveStarterPreparationSummary(starterRecords, outputDir)
+    print(f"Starter preparation summary saved to: {prepSummaryPath}")
+    print(f"Prepared {len(starterRecords)} starter directories")
 
-    print("\n" + "-" * 70)
-    print("ALL GENERATIONS COMPLETE")
-    print("-" * 70)
-    print(f"Generations run: {config['network']['generations']}")
-    print(f"Resolved max_atoms used for every generation: {resolvedMaxAtoms}")
-    print(f"Total generation-starter jobs: {len(allResults)}")
-    print(f"Total wall time across all generations: {allTotalTime:.2f}s")
+    if invalidRecords:
+        print(f"Warning: {len(invalidRecords)} invalid starters were skipped because fail_on_invalid_smiles=false")
+
+    totalStartTime = time.time()
+    results = runParallelProcessing(starterRecords, config)
+    totalTime = time.time() - totalStartTime
+
+    summaryPath = saveSummary(results, outputDir)
+    print(f"\nProcessing summary saved to: {summaryPath}")
+    printSummary(results, totalTime)
 
 
 if __name__ == "__main__":
