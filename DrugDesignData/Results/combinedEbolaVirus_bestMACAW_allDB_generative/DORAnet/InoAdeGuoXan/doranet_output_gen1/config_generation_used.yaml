@@ -20,7 +20,7 @@ output:
 parallel:
   num_workers: 10
 network:
-  generations: 3
+  generations: 1
   ruleset: JN3604IMT
   direction: forward
 max_atoms:

@@ -1,0 +1,132 @@
+# Run with:
+# python runRL_potency_single_gen_parallel_precompute.py config_gen2_parallel_precompute.yaml
+
+runtime:
+  force_thread_env: true
+  omp_num_threads: 16
+  mkl_num_threads: 1
+  openblas_num_threads: 1
+  numexpr_num_threads: 1
+
+project_paths:
+  doranet_path: /users/sghosh6/DTRA_project/MACAW/doranet
+  art_path: /users/sghosh6/DTRA_project/MACAW/AutomatedRecommendationTool
+  extra_python_paths: [., ..]
+
+output:
+  output_dir: ./RL_gen2
+
+mode:
+  run_smoke_tests: false
+  smoke_test_n: 2
+
+seed:
+  seed_csv: ../../combinedEbola_allDORAnetGenerated_Antivirals_ARTprediction.csv
+  smiles_col: SMILES
+  max_seeds: 20
+  minimum_columns: [SMILES, pPotency_prediction]
+  required_columns: [SMILES, pPotency_prediction, pPotency_std, pPotency_lower_95CI, pPotency_upper_95CI]
+  selection:
+    method: top_potency_diverse
+    potency_col: pPotency_prediction
+    uncertainty_col: null
+    similarity_threshold: 0.75
+    fingerprint_radius: 2
+    fingerprint_bits: 2048
+    prefilter_multiplier: 10
+  sampling:
+    method: uniform
+
+macaw:
+  transformer_path: ../../combinedEbolaVirusData_allDB_MACAW_transformer.joblib
+
+art:
+  model_path: ../../ART_MACAW/ART_results/art.cpkl
+  output_dir: ./ART_results
+  input_feature_prefix: MACAW_
+
+doranet:
+  ruleset: JN3604IMT
+  gen: 2
+  max_actions: 32
+  job_prefix: rl_potency_only_gen2
+  max_atoms_mode: from_seed_pool
+  max_atoms_multiplier: 1.5
+  max_atoms_elements: [C, N, O, S]
+  network_subdir: doranet_networks
+
+  action_cache_enabled: true
+  action_cache_subdir: action_cache
+  precompute_seed_actions: true
+  precompute_parallel: true
+  precompute_num_workers: 16
+  precompute_worker_omp_threads: 1
+  precompute_fail_fast: false
+
+rl:
+  max_steps: 4
+  max_actions: 32
+  fingerprint_bits: 2048
+
+reward:
+  potencyTarget: 5.85
+  potencyScale: 0.20
+  deltaPotencyTarget: 0.10
+  deltaPotencyScale: 0.10
+  invalidActionPenalty: -0.50
+  invalidActionTerminates: true
+  weights:
+    potency: 0.85
+    deltaPotency: 0.15
+
+multi_objective:
+  enabled: true
+  preference_sets:
+    potency_only:
+      potency: 0.85
+      deltaPotency: 0.15
+
+pareto:
+  enabled: true
+  use_during_training: false
+  initialize_with_seeds: true
+  non_dominated_bonus: 0.00
+  dominated_penalty: 0.00
+  annotated_output_csv: rl_potency_only_candidates_with_pareto.csv
+  front_output_csv: rl_potency_only_pareto_front.csv
+  ranked_front_output_csv: rl_potency_only_pareto_front_ranked.csv
+  objectives:
+    pPotency_prediction: maximize
+    deltaPotency: maximize
+  ranking:
+    enabled: true
+    method: percentile
+    pPotency_prediction: 0.85
+    deltaPotency: 0.15
+
+diagnostics:
+  potency_beam_search:
+    enabled: false
+
+training:
+  enabled: true
+  total_timesteps: 100000
+  policy: MlpPolicy
+  learning_rate: 0.0003
+  n_steps: 1024
+  batch_size: 128
+  gamma: 0.97
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.08
+  verbose: 1
+
+rollout:
+  enabled: true
+  num_episodes_per_policy: 5000
+  deterministic: false
+  output_csv: rl_potency_only_generated_candidates.csv
+
+plotting:
+  enabled: true
+  output_png: rl_potency_only_generated_vs_seed_potency.png

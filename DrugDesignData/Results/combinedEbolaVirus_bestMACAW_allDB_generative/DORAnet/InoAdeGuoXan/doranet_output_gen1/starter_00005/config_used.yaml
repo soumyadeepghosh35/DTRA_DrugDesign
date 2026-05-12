@@ -20,7 +20,7 @@ output:
 parallel:
   num_workers: 10
 network:
-  generations: 3
+  generations: 1
   ruleset: JN3604IMT
   direction: forward
 max_atoms:
@@ -46,7 +46,7 @@ starter:
   starter_idx: 5
   input_csv_row_index: 5
   starter_smiles: NC(=O)C1=CN([C@@H]2O[C@H](COP(=O)(O)OP(=O)(O)OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](OP(=O)(O)O)[C@@H]3O)[C@@H](O)[C@H]2O)C=CC1
-  job_name: starter_00005_gen3
+  job_name: starter_00005_gen1
   starter_output_directory: doranet_output_gen1/starter_00005
   atom_counts:
     C: 21

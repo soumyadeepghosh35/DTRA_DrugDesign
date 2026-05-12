@@ -10,7 +10,7 @@ input:
   deduplicate_smiles: false
 
 output:
-  directory: "doranet_output_gen1"
+  directory: "doranet_output_gen2"
   overwrite_existing_output_dir: true
   overwrite_existing_starter_dirs: true
   save_generation_config: true
