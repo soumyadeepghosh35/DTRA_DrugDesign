@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-runRL_potency_frontier.py
+runRL_potency_single_gen.py
 
-YAML-driven frontier-potency reinforcement-learning workflow for
+YAML-driven potency-only reinforcement-learning workflow for
 reaction-constrained molecular optimization with DORAnet, MACAW, and ART.
 
 This version keeps ADMET/Toxicity helper classes in the file for later
@@ -11,7 +11,7 @@ does not score toxicity/QED during rollouts, and does not penalize uncertainty.
 
 Usage
 -----
-python runRL_potency_frontier.py config_gen1.yaml
+python runRL_potency_single_gen.py config_gen1.yaml
 
 Recommended first test
 ----------------------
@@ -175,72 +175,6 @@ def countAtomsByElement(smiles: str, elements: List[str]) -> Dict[str, int]:
             counts[symbol] += 1
     return counts
 
-
-
-
-def getCandidateFilterConfig(config: dict) -> dict:
-    """Return DORAnet candidate filter settings with conservative defaults."""
-    dconf = config.get("doranet", {}) or {}
-    filt = dconf.get("candidate_filters", {}) or {}
-    return {
-        "exclude_seed_molecules": bool(filt.get("exclude_seed_molecules", True)),
-        "remove_dummy_atoms": bool(filt.get("remove_dummy_atoms", True)),
-        "remove_multifragment": bool(filt.get("remove_multifragment", True)),
-        "require_carbon": bool(filt.get("require_carbon", True)),
-        "min_heavy_atoms": int(filt.get("min_heavy_atoms", 12)),
-        "max_heavy_atoms": int(filt.get("max_heavy_atoms", 120)),
-        "allowed_elements": set(str(x) for x in filt.get("allowed_elements", ["C", "N", "O", "S", "P", "F", "Cl", "Br", "I"])),
-    }
-
-
-def isValidRlCandidate(smiles: str, seedSmilesSet: Optional[set] = None, filterConfig: Optional[dict] = None) -> bool:
-    """Return True if a DORAnet product is suitable as an RL candidate/action."""
-    filterConfig = filterConfig or {}
-    seedSmilesSet = seedSmilesSet or set()
-
-    canonical = canonicalizeSmiles(smiles)
-    if canonical is None:
-        return False
-    if bool(filterConfig.get("exclude_seed_molecules", True)) and canonical in seedSmilesSet:
-        return False
-
-    mol = Chem.MolFromSmiles(canonical)
-    if mol is None:
-        return False
-    if bool(filterConfig.get("remove_dummy_atoms", True)) and any(atom.GetAtomicNum() == 0 for atom in mol.GetAtoms()):
-        return False
-    if bool(filterConfig.get("remove_multifragment", True)) and len(Chem.GetMolFrags(mol)) > 1:
-        return False
-
-    heavyAtoms = int(mol.GetNumHeavyAtoms())
-    if heavyAtoms < int(filterConfig.get("min_heavy_atoms", 12)):
-        return False
-    if heavyAtoms > int(filterConfig.get("max_heavy_atoms", 120)):
-        return False
-    if bool(filterConfig.get("require_carbon", True)) and not any(atom.GetSymbol() == "C" for atom in mol.GetAtoms()):
-        return False
-
-    allowedElements = set(str(x) for x in filterConfig.get("allowed_elements", ["C", "N", "O", "S", "P", "F", "Cl", "Br", "I"]))
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() not in allowedElements:
-            return False
-    return True
-
-
-def addFrontierAndNoveltyColumns(DF: pd.DataFrame, seedDF: pd.DataFrame, globalBestSeedPotency: Optional[float] = None) -> pd.DataFrame:
-    """Annotate generated candidates with exact-seed novelty and seed-frontier metrics."""
-    if DF is None or DF.empty:
-        return pd.DataFrame() if DF is None else DF.copy()
-    outDF = DF.copy()
-    outDF["canonicalSmiles"] = outDF["SMILES"].apply(canonicalizeSmiles) if "SMILES" in outDF.columns else np.nan
-    seedSet = set(seedDF.get("canonicalSmiles", pd.Series(dtype=str)).dropna().astype(str).tolist())
-    outDF["isNovelVsSeedSet"] = ~outDF["canonicalSmiles"].isin(seedSet)
-    if globalBestSeedPotency is None or not np.isfinite(float(globalBestSeedPotency)):
-        globalBestSeedPotency = float(pd.to_numeric(seedDF["pPotency_prediction"], errors="coerce").max())
-    outDF["globalBestSeedPotency"] = float(globalBestSeedPotency)
-    outDF["frontierDeltaPotency"] = pd.to_numeric(outDF.get("pPotency_prediction", np.nan), errors="coerce") - float(globalBestSeedPotency)
-    outDF["isNovelFrontierImprovement"] = outDF["isNovelVsSeedSet"] & (pd.to_numeric(outDF["frontierDeltaPotency"], errors="coerce") > 0.0)
-    return outDF
 
 def deriveMaxAtomsFromSeeds(seedDF: pd.DataFrame, config: dict) -> Tuple[Dict[str, int], pd.DataFrame]:
     """Derive global DORAnet max_atoms from the selected seed pool.
@@ -779,52 +713,22 @@ def finalizeSeedScores(seedDF, toxicityOracle, outputDir):
 
 
 def finalizeRewardConfig(config, seedDF, rewardConfig=None):
-    """Finalize frontier-potency reward configuration.
+    """Finalize the potency-only reward configuration.
 
-    Default automatic target:
-        potencyTarget = best selected seed pPotency * 1.10
-
-    This implements a 10% increase on the pPotency scale, exactly as requested.
+    This function intentionally does not add toxicity, QED, route-depth,
+    potency-uncertainty, or potency-loss defaults. The RL reward should depend
+    only on absolute potency and potency improvement over the selected seed.
     """
     rewardConfig = (rewardConfig or config.get("reward", {})).copy()
-
-    bestSeedPotency = float(pd.to_numeric(seedDF["pPotency_prediction"], errors="coerce").max())
-    medianSeedPotency = float(pd.to_numeric(seedDF["pPotency_prediction"], errors="coerce").median())
-    rewardConfig["globalBestSeedPotency"] = bestSeedPotency
-
-    targetMode = str(rewardConfig.get("potencyTargetMode", "best_seed_percent_increase")).lower()
-    if targetMode in {"best_seed_percent_increase", "best_seed_plus_percent", "best_seed_times"}:
-        pct = float(rewardConfig.get("potencyTargetPercentIncrease", 0.10))
-        if pct > 1.0:
-            pct = pct / 100.0
-        rewardConfig["potencyTarget"] = bestSeedPotency * (1.0 + pct)
-        rewardConfig["potencyTargetResolvedFrom"] = f"bestSeedPotency * (1 + {pct})"
-    elif targetMode in {"best_seed_plus", "best_seed_delta"}:
-        delta = float(rewardConfig.get("potencyTargetDelta", 0.05))
-        rewardConfig["potencyTarget"] = bestSeedPotency + delta
-        rewardConfig["potencyTargetResolvedFrom"] = f"bestSeedPotency + {delta}"
-    elif "potencyTarget" not in rewardConfig:
-        rewardConfig["potencyTarget"] = medianSeedPotency
-        rewardConfig["potencyTargetResolvedFrom"] = "selectedSeedMedian"
-
-    rewardConfig.setdefault("potencyScale", 0.30)
-    rewardConfig.setdefault("deltaPotencyTarget", 0.05)
+    rewardConfig.setdefault("potencyTarget", float(seedDF["pPotency_prediction"].median()))
+    rewardConfig.setdefault("potencyScale", 0.25)
+    rewardConfig.setdefault("deltaPotencyTarget", 0.10)
     rewardConfig.setdefault("deltaPotencyScale", 0.08)
-    rewardConfig.setdefault("frontierDeltaTarget", 0.0)
-    rewardConfig.setdefault("frontierDeltaScale", 0.08)
     rewardConfig.setdefault("invalidActionPenalty", -0.50)
     rewardConfig.setdefault("invalidActionTerminates", True)
-    rewardConfig.setdefault("minRouteLength", 1)
-    rewardConfig.setdefault("earlyStopPenalty", -0.75)
-    rewardConfig.setdefault("weights", {"potency": 0.25, "deltaPotency": 0.30, "frontierDelta": 0.45})
-
-    print(
-        "Resolved potency target: "
-        f"bestSeed={bestSeedPotency:.4f}, "
-        f"potencyTarget={float(rewardConfig['potencyTarget']):.4f}, "
-        f"mode={rewardConfig.get('potencyTargetResolvedFrom')}"
-    )
+    rewardConfig.setdefault("weights", {"potency": 0.70, "deltaPotency": 0.30})
     return rewardConfig
+
 
 def defaultEndpointMetaDF() -> pd.DataFrame:
     """Endpoint metadata used when no endpoint metadata CSV is supplied."""
@@ -1158,21 +1062,7 @@ class DoranetAdapter:
         self.maxAtoms = {str(k): int(v) for k, v in dconf.get("max_atoms", {"C": 41, "N": 9, "O": 12, "S": 0}).items()}
         self.gen = int(dconf.get("gen", 1))
         self.maxActions = int(dconf.get("max_actions", 16))
-        self.maxRawProducts = dconf.get("max_raw_products", 2048)
-        self.maxRawProducts = None if self.maxRawProducts in {None, "null", "None", "all"} else int(self.maxRawProducts)
-        self.actionSelection = str(dconf.get("action_selection", "art_ranked_diverse")).lower()
-        self.actionRankWeights = dconf.get(
-            "action_rank_score",
-            {"potency": 0.45, "parent_delta": 0.25, "frontier_delta": 0.30},
-        )
-        self.diversityConfig = dconf.get("diversity", {}) or {}
         self.jobPrefix = dconf.get("job_prefix", "rl_tmp")
-
-        self.seedSmilesSet: set[str] = set()
-        self.seedPotencyBySmiles: Dict[str, float] = {}
-        self.globalBestSeedPotency: float = np.nan
-        self.candidateFilterConfig = getCandidateFilterConfig(config)
-        self.actionScorer = None
 
         # Each single-generation job writes DORAnet network JSON files into its
         # own output directory, e.g. ./_gen1/doranet_networks.
@@ -1274,140 +1164,6 @@ class DoranetAdapter:
 
         return actions
 
-    def setSeedContext(self, seedDF: pd.DataFrame) -> None:
-        """Provide exact-seed set and global frontier potency to the action selector."""
-        if seedDF is None or seedDF.empty:
-            return
-        self.seedSmilesSet = set(seedDF["canonicalSmiles"].dropna().astype(str).tolist())
-        self.seedPotencyBySmiles = {
-            str(row["canonicalSmiles"]): float(row["pPotency_prediction"])
-            for _, row in seedDF.iterrows()
-            if pd.notna(row.get("canonicalSmiles")) and pd.notna(row.get("pPotency_prediction"))
-        }
-        self.globalBestSeedPotency = float(pd.to_numeric(seedDF["pPotency_prediction"], errors="coerce").max())
-        self.candidateFilterConfig["exclude_seed_molecules"] = bool(
-            self.candidateFilterConfig.get("exclude_seed_molecules", True)
-        )
-
-    def setActionScorer(self, combinedScorer) -> None:
-        """Attach an ART scorer for ranking raw DORAnet products before RL actions."""
-        self.actionScorer = combinedScorer
-        # Clear in-memory action cache because action ranking depends on scorer/context.
-        self.cache = {}
-
-    def filterRawProducts(self, canonical: str, productSmilesList: List[str]) -> List[str]:
-        """Filter and deduplicate raw DORAnet products before optional ART ranking."""
-        filtered = []
-        seen = set()
-        for product in productSmilesList:
-            product = canonicalizeSmiles(product)
-            if product is None or product == canonical or product in self.helpers:
-                continue
-            if product in seen:
-                continue
-            if not isValidRlCandidate(product, self.seedSmilesSet, self.candidateFilterConfig):
-                continue
-            seen.add(product)
-            filtered.append(product)
-            if self.maxRawProducts is not None and len(filtered) >= self.maxRawProducts:
-                break
-        return filtered
-
-    def getSourcePotency(self, canonical: str) -> float:
-        if canonical in self.seedPotencyBySmiles:
-            return float(self.seedPotencyBySmiles[canonical])
-        if self.actionScorer is None:
-            return np.nan
-        try:
-            return float(self.actionScorer.scoreOne(canonical).get("pPotency_prediction", np.nan))
-        except Exception:
-            return np.nan
-
-    def selectActionProducts(self, canonical: str, productSmilesList: List[str]) -> Tuple[List[str], pd.DataFrame]:
-        """Select the final RL action list from a larger raw product pool.
-
-        If action_selection is ART-ranked, products are scored with ART and the
-        top maxActions are selected by a weighted mixture of absolute potency,
-        parent-delta potency, and frontier-delta potency. This avoids exposing
-        PPO to arbitrary DORAnet output ordering.
-        """
-        productSmilesList = list(dict.fromkeys(productSmilesList))
-        if not productSmilesList:
-            return [], pd.DataFrame()
-
-        if self.actionScorer is None or self.actionSelection in {"first", "raw", "none"}:
-            return productSmilesList[: self.maxActions], pd.DataFrame({"productSmiles": productSmilesList[: self.maxActions]})
-
-        scoredDF = self.actionScorer.scoreBatch(productSmilesList)
-        if scoredDF.empty or "pPotency_prediction" not in scoredDF.columns:
-            return productSmilesList[: self.maxActions], pd.DataFrame({"productSmiles": productSmilesList[: self.maxActions]})
-
-        scoredDF = scoredDF.copy()
-        scoredDF["productSmiles"] = scoredDF["SMILES"].apply(canonicalizeSmiles)
-        scoredDF = scoredDF.dropna(subset=["productSmiles"]).drop_duplicates("productSmiles")
-        sourcePotency = self.getSourcePotency(canonical)
-        scoredDF["sourcePotencyForActionRanking"] = sourcePotency
-        scoredDF["parentDeltaPotency"] = pd.to_numeric(scoredDF["pPotency_prediction"], errors="coerce") - sourcePotency
-        scoredDF["globalBestSeedPotency"] = self.globalBestSeedPotency
-        scoredDF["frontierDeltaPotency"] = pd.to_numeric(scoredDF["pPotency_prediction"], errors="coerce") - self.globalBestSeedPotency
-
-        weights = {str(k): float(v) for k, v in (self.actionRankWeights or {}).items()}
-        score = np.zeros(len(scoredDF), dtype=float)
-        denom = 0.0
-        componentMap = {
-            "potency": "pPotency_prediction",
-            "parent_delta": "parentDeltaPotency",
-            "frontier_delta": "frontierDeltaPotency",
-        }
-        for key, col in componentMap.items():
-            if col not in scoredDF.columns or key not in weights:
-                continue
-            values = pd.to_numeric(scoredDF[col], errors="coerce")
-            if values.notna().sum() == 0:
-                continue
-            pct = values.rank(pct=True, method="average").to_numpy(dtype=float)
-            pct = np.nan_to_num(pct, nan=0.0)
-            scoredDF[f"actionRankComponent_{key}"] = pct
-            score += weights[key] * pct
-            denom += abs(weights[key])
-        scoredDF["actionRankScore"] = score / denom if denom > 0 else pd.to_numeric(scoredDF["pPotency_prediction"], errors="coerce")
-
-        if self.actionSelection in {"art_ranked_diverse", "ranked_diverse", "potency_ranked_diverse"}:
-            selectedRows = []
-            selectedFPs = []
-            radius = int(self.diversityConfig.get("fingerprint_radius", 2))
-            nBits = int(self.diversityConfig.get("fingerprint_bits", 2048))
-            maxTan = float(self.diversityConfig.get("max_tanimoto_to_selected", 0.90))
-            for _, row in scoredDF.sort_values("actionRankScore", ascending=False).iterrows():
-                fp = molFingerprintForDiversity(row["productSmiles"], radius=radius, nBits=nBits)
-                if fp is None:
-                    continue
-                if selectedFPs:
-                    maxSim = max(DataStructs.TanimotoSimilarity(fp, selectedFP) for selectedFP in selectedFPs)
-                    if maxSim > maxTan:
-                        continue
-                selectedRows.append(row)
-                selectedFPs.append(fp)
-                if len(selectedRows) >= self.maxActions:
-                    break
-            if len(selectedRows) < self.maxActions:
-                selected = {row["productSmiles"] for row in selectedRows}
-                for _, row in scoredDF.sort_values("actionRankScore", ascending=False).iterrows():
-                    if row["productSmiles"] in selected:
-                        continue
-                    selectedRows.append(row)
-                    selected.add(row["productSmiles"])
-                    if len(selectedRows) >= self.maxActions:
-                        break
-            selectedDF = pd.DataFrame(selectedRows)
-        else:
-            selectedDF = scoredDF.sort_values("actionRankScore", ascending=False).head(self.maxActions).copy()
-
-        if selectedDF.empty:
-            return [], scoredDF
-        selectedProducts = selectedDF["productSmiles"].dropna().astype(str).tolist()[: self.maxActions]
-        return selectedProducts, scoredDF.sort_values("actionRankScore", ascending=False).reset_index(drop=True)
-
     def enumerateActions(self, smiles: str) -> List[DoranetAction]:
         canonical = canonicalizeSmiles(smiles)
         if canonical is None:
@@ -1419,12 +1175,11 @@ class DoranetAdapter:
         jobName = self.stableJobName(canonical)
         starters = {canonical}
         cachePath = self.getActionCachePath(jobName)
-        rawProductSmilesList = []
 
         if self.actionCacheEnabled and cachePath.exists():
             try:
                 cacheDF = pd.read_csv(cachePath)
-                rawProductSmilesList = (
+                productSmilesList = (
                     cacheDF.get("productSmiles", pd.Series(dtype=str))
                     .dropna()
                     .astype(str)
@@ -1432,58 +1187,48 @@ class DoranetAdapter:
                     .dropna()
                     .drop_duplicates()
                     .tolist()
-                )
+                )[: self.maxActions]
+                actions = self.buildActionsFromProducts(canonical, jobName, productSmilesList)
+                self.cache[canonical] = actions
+                return actions
             except Exception as exc:
                 print(f"WARNING: could not read DORAnet action cache {cachePath}: {exc}")
-                rawProductSmilesList = []
 
-        if not rawProductSmilesList:
+        try:
+            # DORAnet writes network JSON files relative to the active working
+            # directory in this workflow. Temporarily run generation inside the
+            # configured per-generation network directory so outputs are physically separated.
+            oldCwd = Path.cwd()
+            os.chdir(self.networkOutputDir)
             try:
-                # DORAnet writes network JSON files relative to the active working
-                # directory in this workflow. Temporarily run generation inside the
-                # configured per-generation network directory so outputs are physically separated.
-                oldCwd = Path.cwd()
-                os.chdir(self.networkOutputDir)
-                try:
-                    forwardNetwork = self.enzymatic.generate_network(
-                        job_name=jobName,
-                        starters=starters,
-                        gen=self.gen,
-                        max_atoms=self.maxAtoms,
-                        direction="forward",
-                        ruleset=self.ruleset,
-                    )
-                finally:
-                    os.chdir(oldCwd)
-            except Exception as exc:
-                print(f"DORAnet failed for {canonical}: {exc}")
-                self.cache[canonical] = []
-                return []
+                forwardNetwork = self.enzymatic.generate_network(
+                    job_name=jobName,
+                    starters=starters,
+                    gen=self.gen,
+                    max_atoms=self.maxAtoms,
+                    direction="forward",
+                    ruleset=self.ruleset,
+                )
+            finally:
+                os.chdir(oldCwd)
+        except Exception as exc:
+            print(f"DORAnet failed for {canonical}: {exc}")
+            self.cache[canonical] = []
+            return []
 
-            generatedProducts = []
-            for mol in forwardNetwork.mols:
-                product = canonicalizeSmiles(mol.uid)
-                if product is not None:
-                    generatedProducts.append(product)
+        productSmilesList = []
+        for mol in forwardNetwork.mols:
+            product = canonicalizeSmiles(mol.uid)
+            if product is None or product == canonical or product in self.helpers:
+                continue
+            productSmilesList.append(product)
 
-            rawProductSmilesList = self.filterRawProducts(canonical, generatedProducts)
+        productSmilesList = list(dict.fromkeys(productSmilesList))[: self.maxActions]
 
-            if self.actionCacheEnabled:
-                pd.DataFrame({"productSmiles": rawProductSmilesList}).to_csv(cachePath, index=False)
+        if self.actionCacheEnabled:
+            pd.DataFrame({"productSmiles": productSmilesList}).to_csv(cachePath, index=False)
 
-        # Apply filter again when loading from cache, because config filters may change.
-        rawProductSmilesList = self.filterRawProducts(canonical, rawProductSmilesList)
-        selectedProducts, scoredActionDF = self.selectActionProducts(canonical, rawProductSmilesList)
-
-        # Save optional action-ranking table for post-run debugging.
-        if scoredActionDF is not None and not scoredActionDF.empty:
-            rankPath = self.actionCacheDir / f"{jobName}_action_ranked_scores.csv"
-            try:
-                scoredActionDF.to_csv(rankPath, index=False)
-            except Exception:
-                pass
-
-        actions = self.buildActionsFromProducts(canonical, jobName, selectedProducts)
+        actions = self.buildActionsFromProducts(canonical, jobName, productSmilesList)
         self.cache[canonical] = actions
         return actions
 
@@ -1577,29 +1322,22 @@ def sigmoidScaled(x: float, center: float, scale: float) -> float:
 
 
 def computeRewardVector(scoreDict: dict, rewardConfig: dict, routeDepth: int) -> dict:
-    """Return frontier-potency reward components.
+    """Return potency-only reward components.
 
-    Reward terms:
+    Reward terms used:
       1. potency: absolute ART-predicted pPotency
-      2. deltaPotency: improvement over the exact parent seed
-      3. frontierDelta: improvement over the best selected seed potency
+      2. deltaPotency: improvement over the exact seed molecule
+
+    Reward terms intentionally not used:
+      toxicity, deltaToxicity, QED, route depth, ART uncertainty, potency-loss penalty.
     """
     potencyVal = scoreDict.get("pPotency_prediction", np.nan)
     seedPotency = scoreDict.get("seedPotency", np.nan)
-    globalBestSeedPotency = scoreDict.get(
-        "globalBestSeedPotency",
-        rewardConfig.get("globalBestSeedPotency", np.nan),
-    )
 
     if pd.isna(seedPotency) or pd.isna(potencyVal):
         deltaPotency = 0.0
     else:
         deltaPotency = float(potencyVal) - float(seedPotency)
-
-    if pd.isna(globalBestSeedPotency) or pd.isna(potencyVal):
-        frontierDelta = 0.0
-    else:
-        frontierDelta = float(potencyVal) - float(globalBestSeedPotency)
 
     potencyReward = sigmoidScaled(
         potencyVal,
@@ -1609,29 +1347,22 @@ def computeRewardVector(scoreDict: dict, rewardConfig: dict, routeDepth: int) ->
 
     deltaPotencyReward = sigmoidScaled(
         deltaPotency,
-        float(rewardConfig.get("deltaPotencyTarget", 0.05)),
+        float(rewardConfig.get("deltaPotencyTarget", 0.10)),
         float(rewardConfig.get("deltaPotencyScale", 0.08)),
-    )
-
-    frontierDeltaReward = sigmoidScaled(
-        frontierDelta,
-        float(rewardConfig.get("frontierDeltaTarget", 0.0)),
-        float(rewardConfig.get("frontierDeltaScale", 0.08)),
     )
 
     return {
         "potency": float(potencyReward),
         "deltaPotency": float(deltaPotencyReward),
-        "frontierDelta": float(frontierDeltaReward),
     }
 
+
 def getDefaultPreferenceWeights(rewardConfig: dict) -> dict:
-    """Map scalar reward weights into frontier-potency preferences."""
+    """Map scalar reward weights into potency-only preferences."""
     legacy = rewardConfig.get("weights", {})
     return {
-        "potency": float(legacy.get("potency", 0.25)),
+        "potency": float(legacy.get("potency", 0.70)),
         "deltaPotency": float(legacy.get("deltaPotency", 0.30)),
-        "frontierDelta": float(legacy.get("frontierDelta", 0.45)),
     }
 def normalizePreferenceWeights(preferenceWeights: dict) -> dict:
     cleaned = {str(k): float(v) for k, v in preferenceWeights.items()}
@@ -1684,7 +1415,6 @@ def computeRlReward(scoreDict: dict, rewardConfig: dict, routeDepth: int) -> dic
 DEFAULT_PARETO_OBJECTIVES = {
     "pPotency_prediction": "maximize",
     "deltaPotency": "maximize",
-    "frontierDeltaPotency": "maximize",
 }
 
 
@@ -1828,7 +1558,7 @@ def saveParetoOutputs(generatedDF: pd.DataFrame, config: dict, outputDir: Path):
     annotatedDF = addParetoFrontColumns(generatedDF, objectives=objectives)
     paretoDF = annotatedDF.loc[annotatedDF["isParetoFront"]].copy()
 
-    sortCols = [col for col in ["frontierDeltaPotency", "pPotency_prediction", "deltaPotency"] if col in paretoDF.columns]
+    sortCols = [col for col in ["pPotency_prediction", "deltaPotency"] if col in paretoDF.columns]
     if sortCols:
         ascending = [False for _ in sortCols]
         paretoDF = paretoDF.sort_values(sortCols, ascending=ascending).reset_index(drop=True)
@@ -1894,10 +1624,6 @@ def buildEnvClass():
             self.fpBits = int(fpBits)
             self.paretoArchive = paretoArchive
             self.preferenceWeights = preferenceWeights or getDefaultPreferenceWeights(rewardConfig)
-            self.globalBestSeedPotency = float(rewardConfig.get(
-                "globalBestSeedPotency",
-                pd.to_numeric(self.seedDF["pPotency_prediction"], errors="coerce").max(),
-            ))
 
             self.action_space = spaces.Discrete(self.maxActions + 1)  # 0 = STOP
             self.observation_space = spaces.Box(
@@ -1939,13 +1665,6 @@ def buildEnvClass():
             actionId = int(actionId)
 
             if actionId == 0:
-                minRouteLength = int(self.rewardConfig.get("minRouteLength", 0))
-                if len(self.routeHistory) < minRouteLength:
-                    obs = buildObservation(self.currentSmiles, self.stepIndex, self.seedRow, self.fpBits)
-                    return obs, float(self.rewardConfig.get("earlyStopPenalty", -0.75)), True, False, {
-                        "earlyStopBeforeMinRoute": True,
-                        "routeLength": len(self.routeHistory),
-                    }
                 return self._terminalStep()
 
             chosenIndex = actionId - 1
@@ -1992,12 +1711,6 @@ def buildEnvClass():
             scoreDict["deltaPotency"] = (
                 float(scoreDict.get("pPotency_prediction", np.nan)) - seedPotency
                 if np.isfinite(seedPotency) and pd.notna(scoreDict.get("pPotency_prediction", np.nan))
-                else np.nan
-            )
-            scoreDict["globalBestSeedPotency"] = self.globalBestSeedPotency
-            scoreDict["frontierDeltaPotency"] = (
-                float(scoreDict.get("pPotency_prediction", np.nan)) - self.globalBestSeedPotency
-                if np.isfinite(self.globalBestSeedPotency) and pd.notna(scoreDict.get("pPotency_prediction", np.nan))
                 else np.nan
             )
 
@@ -2160,9 +1873,6 @@ def _precomputeSeedActionWorker(task: dict) -> dict:
     startTime = time.time()
     try:
         adapter = DoranetAdapter(config)
-        adapter.seedSmilesSet = set(task.get("seedSmilesSet", []))
-        adapter.seedPotencyBySmiles = {str(k): float(v) for k, v in task.get("seedPotencyBySmiles", {}).items()}
-        adapter.globalBestSeedPotency = float(task.get("globalBestSeedPotency", np.nan))
         actionList = adapter.enumerateActions(smiles)
         jobName = adapter.stableJobName(canonicalizeSmiles(smiles) or smiles)
         cachePath = adapter.getActionCachePath(jobName)
@@ -2230,14 +1940,6 @@ def precomputeSeedDoranetActions(
     print(f"OMP threads per precompute worker: {workerOmpThreads}")
     print("Action cache directory:", doranetAdapter.actionCacheDir)
 
-    seedSmilesSet = seedWorkDF["canonicalSmiles"].dropna().astype(str).tolist()
-    seedPotencyBySmiles = {
-        str(row["canonicalSmiles"]): float(row.get("pPotency_prediction", np.nan))
-        for _, row in seedWorkDF.iterrows()
-        if pd.notna(row.get("canonicalSmiles"))
-    }
-    globalBestSeedPotency = float(pd.to_numeric(seedWorkDF["pPotency_prediction"], errors="coerce").max())
-
     tasks = []
     for seedIndex, row in seedWorkDF.iterrows():
         tasks.append(
@@ -2247,9 +1949,6 @@ def precomputeSeedDoranetActions(
                 "smiles": str(row["canonicalSmiles"]),
                 "seedPotency": float(row.get("pPotency_prediction", np.nan)),
                 "workerOmpThreads": int(workerOmpThreads),
-                "seedSmilesSet": seedSmilesSet,
-                "seedPotencyBySmiles": seedPotencyBySmiles,
-                "globalBestSeedPotency": globalBestSeedPotency,
             }
         )
 
@@ -2420,18 +2119,11 @@ def rolloutPolicy(
 
     generatedDF = pd.DataFrame(generatedRows)
     if not generatedDF.empty:
-        generatedDF = addFrontierAndNoveltyColumns(
-            generatedDF,
-            seedDF=seedDF,
-            globalBestSeedPotency=float(rewardConfig.get("globalBestSeedPotency", np.nan)),
+        generatedDF = (
+            generatedDF.drop_duplicates(subset=["SMILES"])
+            .sort_values("reward", ascending=False)
+            .reset_index(drop=True)
         )
-        generatedDF = generatedDF.drop_duplicates(subset=["SMILES"])
-        if bool(config.get("output", {}).get("exclude_seed_molecules_from_generated", True)):
-            generatedDF = generatedDF.loc[generatedDF["isNovelVsSeedSet"]].copy()
-        generatedDF = generatedDF.sort_values(
-            [col for col in ["frontierDeltaPotency", "deltaPotency", "pPotency_prediction", "reward"] if col in generatedDF.columns],
-            ascending=False,
-        ).reset_index(drop=True)
 
     outCsv = outputDir / rolloutConfig.get("output_csv", "rl_generated_candidates.csv")
     generatedDF.to_csv(outCsv, index=False)
@@ -2575,17 +2267,11 @@ def rolloutMultiObjectivePolicies(
 
     generatedDF = pd.DataFrame(rows)
     if not generatedDF.empty:
-        generatedDF = addFrontierAndNoveltyColumns(
-            generatedDF,
-            seedDF=seedDF,
-            globalBestSeedPotency=float(rewardConfig.get("globalBestSeedPotency", np.nan)),
-        )
+        sortCols = [col for col in ["pPotency_prediction", "deltaPotency", "reward"] if col in generatedDF.columns]
+        ascending = [False for _ in sortCols]
         generatedDF = generatedDF.drop_duplicates(subset=["SMILES"])
-        if bool(config.get("output", {}).get("exclude_seed_molecules_from_generated", True)):
-            generatedDF = generatedDF.loc[generatedDF["isNovelVsSeedSet"]].copy()
-        sortCols = [col for col in ["frontierDeltaPotency", "deltaPotency", "pPotency_prediction", "reward"] if col in generatedDF.columns]
         if sortCols:
-            generatedDF = generatedDF.sort_values(sortCols, ascending=[False for _ in sortCols])
+            generatedDF = generatedDF.sort_values(sortCols, ascending=ascending)
         generatedDF = generatedDF.reset_index(drop=True)
 
     outCsv = outputDir / rolloutConfig.get("output_csv", "rl_multiobjective_generated_candidates.csv")
@@ -2806,8 +2492,6 @@ def runSingleGenerationWorkflow(
         computeQEDForOutput=False,
         scoreToxicityForOutput=False,
     )
-    doranetAdapter.setSeedContext(seedDF)
-    doranetAdapter.setActionScorer(combinedScorer)
     paretoArchive = ParetoArchive(config, seedDF=seedDF) if useParetoArchiveDuringEnv(config) else None
 
     precomputeSeedDoranetActions(

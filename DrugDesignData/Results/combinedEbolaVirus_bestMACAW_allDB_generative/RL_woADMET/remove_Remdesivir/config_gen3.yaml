@@ -1,4 +1,5 @@
-# Run with: python runRL_potency_frontier.py config_gen2_frontier.yaml
+# Run with:
+# python runRL_potency_single_gen_parallel_precompute.py config_gen3_parallel_precompute.yaml
 
 runtime:
   force_thread_env: true
@@ -13,32 +14,28 @@ project_paths:
   extra_python_paths: [., ..]
 
 output:
-  output_dir: ./RL_gen2
-  exclude_seed_molecules_from_generated: true
+  output_dir: ./RL_gen3
 
 mode:
   run_smoke_tests: false
   smoke_test_n: 2
 
 seed:
-  seed_csv: ../../RemdesivirOnly_DORAnetGenerated_ARTprediction.csv
+  seed_csv: ../../RemdesivirOnly_DORAnetGenerated_wARTprediction_top20.csv
   smiles_col: SMILES
-  max_seeds: 100
+  max_seeds: 20
   minimum_columns: [SMILES, pPotency_prediction]
   required_columns: [SMILES, pPotency_prediction, pPotency_std, pPotency_lower_95CI, pPotency_upper_95CI]
   selection:
     method: top_potency_diverse
     potency_col: pPotency_prediction
     uncertainty_col: null
-    similarity_threshold: 0.80
+    similarity_threshold: 0.75
     fingerprint_radius: 2
     fingerprint_bits: 2048
-    prefilter_multiplier: 20
+    prefilter_multiplier: 10
   sampling:
-    method: potency_softmax
-    potency_col: pPotency_prediction
-    temperature: 0.20
-    min_weight: 0.000001
+    method: uniform
 
 macaw:
   transformer_path: ../../combinedEbolaVirusData_allDB_MACAW_transformer.joblib
@@ -50,31 +47,14 @@ art:
 
 doranet:
   ruleset: JN3604IMT
-  gen: 2
-  max_raw_products: 2048
-  max_actions: 64
-  action_selection: art_ranked_diverse
-  action_rank_score:
-    potency: 0.45
-    parent_delta: 0.25
-    frontier_delta: 0.30
-  diversity:
-    fingerprint_radius: 2
-    fingerprint_bits: 2048
-    max_tanimoto_to_selected: 0.90
-  candidate_filters:
-    exclude_seed_molecules: true
-    remove_dummy_atoms: true
-    remove_multifragment: true
-    require_carbon: true
-    min_heavy_atoms: 12
-    max_heavy_atoms: 120
-    allowed_elements: [C, N, O, S, P, F, Cl, Br, I]
-  job_prefix: rl_frontier_gen2
+  gen: 3
+  max_actions: 16
+  job_prefix: rl_potency_only_gen3
   max_atoms_mode: from_seed_pool
   max_atoms_multiplier: 1.5
   max_atoms_elements: [C, N, O, S]
   network_subdir: doranet_networks
+
   action_cache_enabled: true
   action_cache_subdir: action_cache
   precompute_seed_actions: true
@@ -84,34 +64,27 @@ doranet:
   precompute_fail_fast: false
 
 rl:
-  max_steps: 4
-  max_actions: 64
+  max_steps: 2
+  max_actions: 16
   fingerprint_bits: 2048
 
 reward:
-  potencyTargetMode: best_seed_percent_increase
-  potencyTargetPercentIncrease: 0.10
-  potencyScale: 0.35
+  potencyTarget: 6.30
+  potencyScale: 0.25
   deltaPotencyTarget: 0.05
-  deltaPotencyScale: 0.08
-  frontierDeltaTarget: 0.00
-  frontierDeltaScale: 0.08
-  minRouteLength: 1
-  earlyStopPenalty: -0.75
+  deltaPotencyScale: 0.10
   invalidActionPenalty: -0.50
   invalidActionTerminates: true
   weights:
-    potency: 0.25
-    deltaPotency: 0.25
-    frontierDelta: 0.50
+    potency: 0.85
+    deltaPotency: 0.15
 
 multi_objective:
   enabled: true
   preference_sets:
-    potency_frontier:
-      potency: 0.25
-      deltaPotency: 0.25
-      frontierDelta: 0.50
+    potency_only:
+      potency: 0.85
+      deltaPotency: 0.15
 
 pareto:
   enabled: true
@@ -119,36 +92,29 @@ pareto:
   initialize_with_seeds: true
   non_dominated_bonus: 0.00
   dominated_penalty: 0.00
-  annotated_output_csv: rl_frontier_candidates_with_pareto.csv
-  front_output_csv: rl_frontier_pareto_front.csv
-  ranked_front_output_csv: rl_frontier_pareto_front_ranked.csv
+  annotated_output_csv: rl_potency_only_candidates_with_pareto.csv
+  front_output_csv: rl_potency_only_pareto_front.csv
+  ranked_front_output_csv: rl_potency_only_pareto_front_ranked.csv
   objectives:
     pPotency_prediction: maximize
     deltaPotency: maximize
-    frontierDeltaPotency: maximize
   ranking:
     enabled: true
     method: percentile
-    pPotency_prediction: 0.25
-    deltaPotency: 0.25
-    frontierDeltaPotency: 0.50
+    pPotency_prediction: 0.85
+    deltaPotency: 0.15
 
 diagnostics:
   potency_beam_search:
-    enabled: true
-    top_seed_count: 100
-    max_depth: 2
-    beam_width: 64
-    top_output_rows: 1000
-    output_csv: diagnostic_doranet_beam_frontier.csv
+    enabled: false
 
 training:
   enabled: true
-  total_timesteps: 100000
+  total_timesteps: 25000
   policy: MlpPolicy
   learning_rate: 0.0003
-  n_steps: 1024
-  batch_size: 128
+  n_steps: 512
+  batch_size: 64
   gamma: 0.97
   gae_lambda: 0.95
   clip_range: 0.2
@@ -157,10 +123,10 @@ training:
 
 rollout:
   enabled: true
-  num_episodes_per_policy: 5000
+  num_episodes_per_policy: 1000
   deterministic: false
-  output_csv: rl_frontier_generated_candidates.csv
+  output_csv: rl_potency_only_generated_candidates.csv
 
 plotting:
   enabled: true
-  output_png: rl_frontier_generated_vs_seed_potency.png
+  output_png: rl_potency_only_generated_vs_seed_potency.png
