@@ -1,0 +1,129 @@
+runtime:
+  extra_python_paths:
+  - /users/sghosh6/DTRA_project/MACAW
+  rdkit_warnings: false
+input:
+  csv: /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB_generative/MACAW_InverseDesign/Remdesivir/MACAW_inverseDesign_RLloop_results/design_8/design_8_input_starter_pool.csv
+  read_all_columns: false
+  max_input_rows: null
+models:
+  mcw_path: ../../combinedEbolaVirusData_allDB_MACAW_transformer.joblib
+  art_model_path: ../../ART_MACAW/ART_results/art.cpkl
+columns:
+  smiles: Canonical_SMILES
+  potency: pPotency_prediction
+  std: pPotency_std
+  source: source_DataBase
+  additional_seed_columns: []
+target_potency: 8.36647185205813
+random_seeds:
+- 42
+- 52
+- 62
+- 72
+- 82
+art:
+  feature_prefix: MACAW_
+  pass_dataframe: true
+  prediction_keys:
+  - pPotency_prediction
+  - prediction
+  - mean
+  - y_mean
+seed_selection:
+  method: diverse_then_target_closest
+  n_seeds: 1000
+  diversity:
+    similarity_threshold: 0.75
+    diversity_weight: 0.75
+    target_weight: 0.25
+    morgan_radius: 2
+    morgan_bits: 2048
+    candidate_pool_factor: 10
+    diverse_pool_factor: 3
+loop:
+  enabled: true
+  design_dir_prefix: design
+  target_update_mode: linear_from_initial_best
+  step_fraction: 0.025
+  total_improvement_fraction: 0.25
+  n_designs: 10
+  stop_if_no_generated: true
+  carry_forward:
+    n_starters: 1000
+    min_potency: null
+    max_target_error: null
+  current_design_index: 8
+  initial_best_seed_potency: 6.829772940455615
+  final_target_potency: 8.537216175569519
+  resolved_target_potency: 8.36647185205813
+campaigns:
+- label: transition_empirical_refine
+  algorithm: transition
+  p: empirical
+  k1: 8000
+  k2: 200
+  n_rounds: 5
+  n_hits: 100
+  noise_factor:
+  - 0.3
+  - 0.22
+  - 0.16
+  - 0.1
+  - 0.08
+  force_new: true
+- label: transition_cumsum_broad
+  algorithm: transition
+  p: cumsum
+  k1: 15000
+  k2: 400
+  n_rounds: 6
+  n_hits: 150
+  noise_factor:
+  - 0.65
+  - 0.5
+  - 0.35
+  - 0.25
+  - 0.16
+  - 0.1
+  force_new: true
+- label: position_exp_broad
+  algorithm: position
+  p: exp
+  k1: 15000
+  k2: 400
+  n_rounds: 6
+  n_hits: 150
+  noise_factor:
+  - 0.7
+  - 0.55
+  - 0.4
+  - 0.28
+  - 0.18
+  - 0.1
+  force_new: true
+- label: dual_cumsum_broad
+  algorithm: dual
+  p: cumsum
+  k1: 12000
+  k2: 300
+  n_rounds: 6
+  n_hits: 150
+  noise_factor:
+  - 0.6
+  - 0.45
+  - 0.32
+  - 0.22
+  - 0.15
+  - 0.1
+  force_new: true
+output:
+  output_dir: /mnt/data.ese/nfs/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB_generative/MACAW_InverseDesign/Remdesivir/MACAW_inverseDesign_RLloop_results/design_8
+  prefix: MACAW_generatedCompound
+  save_outputs: true
+  save_each_campaign: true
+  top_n: 500
+  tolerances:
+  - 0.1
+  - 0.25
+  - 0.5
