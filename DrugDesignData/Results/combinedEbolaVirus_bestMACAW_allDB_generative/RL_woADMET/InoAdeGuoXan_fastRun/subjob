@@ -1,0 +1,24 @@
+#!/bin/bash
+set -euo pipefail
+
+export PYTHONHASHSEED=0
+
+# Use DORAnet/OpenMP threading, avoid BLAS oversubscription.
+export OMP_NUM_THREADS=16
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
+
+echo "Starting gen1 at $(date)"
+python runRL.py config_gen1.yaml > RL_gen1.out 2>&1
+echo "Finished gen1 at $(date)"
+
+echo "Starting gen2 at $(date)"
+python runRL.py config_gen2.yaml > RL_gen2.out 2>&1
+echo "Finished gen2 at $(date)"
+
+echo "Starting gen3 at $(date)"
+python runRL.py config_gen3.yaml > RL_gen3.out 2>&1
+echo "Finished gen3 at $(date)"
+
+echo "All generations completed successfully at $(date)"

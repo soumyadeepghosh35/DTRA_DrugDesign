@@ -1,0 +1,182 @@
+# Run with: python runRL_potency_frontier_fast_cache.py config_gen3_frontier_fast_cache.yaml
+runtime:
+  force_thread_env: true
+  omp_num_threads: 16
+  mkl_num_threads: 1
+  openblas_num_threads: 1
+  numexpr_num_threads: 1
+project_paths:
+  doranet_path: /users/sghosh6/DTRA_project/MACAW/doranet
+  art_path: /users/sghosh6/DTRA_project/MACAW/AutomatedRecommendationTool
+  extra_python_paths:
+  - .
+  - ..
+output:
+  output_dir: ./RL_gen3_fast_cache
+  exclude_seed_molecules_from_generated: true
+mode:
+  run_smoke_tests: false
+  smoke_test_n: 2
+seed:
+  seed_csv: ../../combinedEbola_allDORAnetGenerated_Antivirals_ARTprediction.csv
+  smiles_col: SMILES
+  max_seeds: 100
+  minimum_columns:
+  - SMILES
+  - pPotency_prediction
+  required_columns:
+  - SMILES
+  - pPotency_prediction
+  - pPotency_std
+  - pPotency_lower_95CI
+  - pPotency_upper_95CI
+  selection:
+    method: top_potency_diverse
+    potency_col: pPotency_prediction
+    uncertainty_col: null
+    similarity_threshold: 0.8
+    fingerprint_radius: 2
+    fingerprint_bits: 2048
+    prefilter_multiplier: 20
+  sampling:
+    method: potency_softmax
+    potency_col: pPotency_prediction
+    temperature: 0.2
+    min_weight: 1.0e-06
+macaw:
+  transformer_path: ../../combinedEbolaVirusData_allDB_MACAW_transformer.joblib
+art:
+  model_path: ../../ART_MACAW/ART_results/art.cpkl
+  output_dir: ./ART_results
+  input_feature_prefix: MACAW_
+doranet:
+  ruleset: JN3604IMT
+  gen: 3
+  max_raw_products: 2048
+  max_actions: 64
+  action_selection: art_ranked_diverse
+  action_rank_score:
+    potency: 0.45
+    parent_delta: 0.25
+    frontier_delta: 0.3
+  diversity:
+    fingerprint_radius: 2
+    fingerprint_bits: 2048
+    max_tanimoto_to_selected: 0.9
+  candidate_filters:
+    exclude_seed_molecules: true
+    remove_dummy_atoms: true
+    remove_multifragment: true
+    require_carbon: true
+    min_heavy_atoms: 12
+    max_heavy_atoms: 120
+    allowed_elements:
+    - C
+    - N
+    - O
+    - S
+    - P
+    - F
+    - Cl
+    - Br
+    - I
+  job_prefix: rl_frontier_fast_gen3
+  max_atoms_mode: from_seed_pool
+  max_atoms_multiplier: 1.5
+  max_atoms_elements:
+  - C
+  - N
+  - O
+  - S
+  network_subdir: doranet_networks
+  action_cache_enabled: true
+  action_cache_subdir: action_cache
+  precompute_seed_actions: true
+  precompute_parallel: true
+  precompute_num_workers: 16
+  precompute_worker_omp_threads: 1
+  precompute_fail_fast: false
+  use_precomputed_ranked_actions: true
+  frontier_precompute:
+    enabled: true
+    max_depth: 3
+    max_states_per_depth:
+    - 100
+    - 384
+    - 384
+    - 192
+    next_state_pool_multiplier: 4
+rl:
+  max_steps: 4
+  max_actions: 64
+  fingerprint_bits: 2048
+reward:
+  potencyTargetMode: best_seed_percent_increase
+  potencyTargetPercentIncrease: 0.1
+  potencyScale: 0.35
+  deltaPotencyTarget: 0.05
+  deltaPotencyScale: 0.08
+  frontierDeltaTarget: 0.0
+  frontierDeltaScale: 0.08
+  minRouteLength: 1
+  earlyStopPenalty: -0.75
+  invalidActionPenalty: -0.5
+  invalidActionTerminates: true
+  weights:
+    potency: 0.25
+    deltaPotency: 0.25
+    frontierDelta: 0.5
+multi_objective:
+  enabled: true
+  preference_sets:
+    potency_frontier:
+      potency: 0.25
+      deltaPotency: 0.25
+      frontierDelta: 0.5
+pareto:
+  enabled: true
+  use_during_training: false
+  initialize_with_seeds: true
+  non_dominated_bonus: 0.0
+  dominated_penalty: 0.0
+  annotated_output_csv: rl_frontier_candidates_with_pareto.csv
+  front_output_csv: rl_frontier_pareto_front.csv
+  ranked_front_output_csv: rl_frontier_pareto_front_ranked.csv
+  objectives:
+    pPotency_prediction: maximize
+    deltaPotency: maximize
+    frontierDeltaPotency: maximize
+  ranking:
+    enabled: true
+    method: percentile
+    pPotency_prediction: 0.25
+    deltaPotency: 0.25
+    frontierDeltaPotency: 0.5
+diagnostics:
+  potency_beam_search:
+    enabled: true
+    top_seed_count: 100
+    max_depth: 2
+    beam_width: 64
+    top_output_rows: 1000
+    output_csv: diagnostic_doranet_beam_frontier.csv
+training:
+  enabled: true
+  total_timesteps: 100000
+  policy: MlpPolicy
+  learning_rate: 0.0003
+  n_steps: 1024
+  batch_size: 128
+  gamma: 0.97
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.08
+  verbose: 1
+rollout:
+  enabled: true
+  num_episodes_per_policy: 5000
+  deterministic: false
+  output_csv: rl_frontier_generated_candidates.csv
+plotting:
+  enabled: true
+  output_png: rl_frontier_generated_vs_seed_potency.png

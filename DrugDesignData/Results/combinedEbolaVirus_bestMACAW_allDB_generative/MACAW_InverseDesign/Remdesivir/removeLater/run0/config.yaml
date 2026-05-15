@@ -1,7 +1,8 @@
 # Run as:
-#   python runMACAW_InvDsg_loop.py config_macaw_loop.yaml
+#   python runMACAW_InvDsg.py config_macaw_invdsg.yaml
 
 runtime:
+  # Add paths if MACAW / ART custom modules are not installed in the environment.
   extra_python_paths:
     - /users/sghosh6/DTRA_project/MACAW
   rdkit_warnings: false
@@ -12,6 +13,7 @@ input:
   max_input_rows: null
 
 models:
+  # Pretrained MACAW embedder and ART model used in your notebook.
   mcw_path: ../../combinedEbolaVirusData_allDB_MACAW_transformer.joblib
   art_model_path: ../../ART_MACAW/ART_results/art.cpkl
 
@@ -22,9 +24,7 @@ columns:
   source: source_DataBase
   additional_seed_columns: []
 
-# Ignored when loop.enabled=true and loop.auto target is used.
-# Kept for backward-compatible single-design runs if loop.enabled=false.
-target_potency: null
+target_potency: 6.8
 random_seeds: [42, 52, 62, 72, 82]
 
 art:
@@ -33,40 +33,23 @@ art:
   prediction_keys: [pPotency_prediction, prediction, mean, y_mean]
 
 seed_selection:
+  # Options: target_closest, diverse_then_target_closest
   method: diverse_then_target_closest
-  n_seeds: 1000
+  n_seeds: 300
   diversity:
+    # Same spirit as your existing diversity filter.
     similarity_threshold: 0.75
     diversity_weight: 0.75
+    # target_weight defaults to 1 - diversity_weight if omitted.
+    # Keep explicit here for reproducibility.
     target_weight: 0.25
     morgan_radius: 2
     morgan_bits: 2048
+    # n_seeds * candidate_pool_factor molecules are considered before diversity selection.
     candidate_pool_factor: 10
+    # n_seeds * diverse_pool_factor chemically diverse molecules are selected,
+    # then the final n_seeds closest to target potency are retained.
     diverse_pool_factor: 3
-
-# Iterative MACAW potency-enhancement loop.
-loop:
-  enabled: true
-  design_dir_prefix: design
-
-  # pPotency target schedule:
-  # design_0 target = initial_best_seed_pPotency * 1.05
-  # design_1 target = initial_best_seed_pPotency * 1.10
-  # ...
-  # design_4 target = initial_best_seed_pPotency * 1.25
-  target_update_mode: linear_from_initial_best
-  step_fraction: 0.025
-  total_improvement_fraction: 0.25
-  n_designs: 10
-
-  # Stop if a design stage returns no generated molecules.
-  stop_if_no_generated: true
-
-  # Next design starts from newly generated high-pPotency molecules.
-  carry_forward:
-    n_starters: 1000
-    min_potency: null
-    max_target_error: null
 
 campaigns:
   - label: transition_empirical_refine
@@ -110,7 +93,7 @@ campaigns:
     force_new: true
 
 output:
-  output_dir: ./MACAW_inverseDesign_RLloop_results
+  output_dir: ./MACAW_inverseDesign_results
   prefix: MACAW_generatedCompound
   save_outputs: true
   save_each_campaign: true

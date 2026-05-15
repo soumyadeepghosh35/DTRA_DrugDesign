@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
 """
-Run iterative MACAW inverse design from a YAML config.
+Run MACAW inverse design from a YAML config.
 
 Usage:
-    python runMACAW_InvDsg_loop.py config_loop.yaml
+    python runMACAW_InvDsg.py config.yaml
 
-This version supports two modes:
-    1. Single-design mode: one MACAW inverse-design run using target_potency.
-    2. Iterative potency-enhancement mode: design_0, design_1, ... where each
-       design uses the best generated molecules from the previous design as the
-       next starter pool and automatically increases target_potency.
-
-Cluster-friendly choices:
+This script is designed for shared clusters:
     - conservative BLAS/OpenMP thread defaults
-    - loads only required CSV columns unless read_all_columns=true
-    - does not keep all design-level outputs in memory
-    - writes each design to its own result directory
+    - loads only required CSV columns unless read_all_columns is true
+    - selects a small seed pool before Morgan fingerprint diversity selection
+    - writes per-campaign outputs and compact summaries
 """
 
 # Set conservative thread defaults before importing numpy/pandas/sklearn/rdkit.
@@ -27,7 +21,6 @@ os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 os.environ.setdefault("PYTHONHASHSEED", "0")
 
 import argparse
-import copy
 import gc
 import json
 import pickle
@@ -42,6 +35,7 @@ import yaml
 from rdkit import Chem, DataStructs, RDLogger
 from rdkit.Chem import AllChem
 
+# Silence noisy RDKit parse warnings by default; controlled again in main.
 RDLogger.DisableLog("rdApp.warning")
 
 
@@ -55,11 +49,6 @@ def loadConfig(configPath):
     if cfg is None:
         raise ValueError(f"Empty config file: {configPath}")
     return cfg
-
-
-def dumpConfig(cfg, outputPath):
-    with open(outputPath, "w") as handle:
-        yaml.safe_dump(cfg, handle, sort_keys=False)
 
 
 def requireKeys(mapping, keys, sectionName):
@@ -82,10 +71,12 @@ def loadObject(path, label="object"):
         raise FileNotFoundError(f"Could not find {label}: {path}")
 
     suffix = path.suffix.lower()
+
     if suffix in [".joblib", ".jl"]:
         import joblib
         return joblib.load(path)
 
+    # ART .cpkl files often require cloudpickle, but fall back to pickle.
     try:
         import cloudpickle
         with open(path, "rb") as handle:
@@ -104,10 +95,6 @@ def canonicalizeSmiles(smiles):
 
 def safeMkdir(path):
     Path(path).mkdir(parents=True, exist_ok=True)
-
-
-def getWithinColumnName(tolerance):
-    return f"within_{str(float(tolerance)).replace('.', 'p')}"
 
 
 # -----------------------------------------------------------------------------
@@ -239,6 +226,7 @@ def selectTargetClosestSeeds(inputDF, cfg):
 
     DF = prepareSeedFrame(inputDF, targetPotency, columnsCfg)
     seedDF = DF.nsmallest(nSeeds, "seedTargetError").reset_index(drop=True)
+
     seedDF["seedSelectionScore"] = seedDF["seedTargetError"]
     seedDF["seedRank"] = np.arange(1, len(seedDF) + 1)
 
@@ -264,9 +252,11 @@ def selectDiverseThenTargetClosestSeeds(inputDF, cfg):
 
     DF = prepareSeedFrame(inputDF, targetPotency, columnsCfg)
 
+    # Broad near-target candidate pool first.
     nCandidatePool = min(len(DF), nSeeds * candidatePoolFactor)
     poolDF = DF.head(nCandidatePool).copy().reset_index(drop=True)
-    print(f"Candidate pool for diversity selection: {len(poolDF)} molecules", flush=True)
+
+    print(f"Candidate pool for diversity selection: {len(poolDF)} molecules")
 
     poolDF["_fp"] = poolDF[smilesCol].apply(lambda x: makeMorganFp(x, radius, nBits))
     poolDF = poolDF.dropna(subset=["_fp"]).reset_index(drop=True)
@@ -311,6 +301,7 @@ def selectDiverseThenTargetClosestSeeds(inputDF, cfg):
     ]
     diversePoolDF["seedDiversityScore"] = 1.0 - diversePoolDF["seedMaxSimilarityToPrevious"]
 
+    # Finally choose target-closest molecules from the diverse intermediate pool.
     seedDF = (
         diversePoolDF.sort_values("seedTargetError", ascending=True)
         .head(nSeeds)
@@ -366,6 +357,7 @@ def runOneCampaign(seedSmiles, campaignCfg, randomSeed, cfg, libraryEvolver, mcw
 
     label = campaignCfg["label"]
     campaignLabel = f"{label}_seed{randomSeed}"
+
     print(f"\nRunning {campaignLabel}", flush=True)
 
     result = libraryEvolver(
@@ -391,6 +383,7 @@ def runOneCampaign(seedSmiles, campaignCfg, randomSeed, cfg, libraryEvolver, mcw
         predOut = model(mcw.transform(smilesOut))
 
     predOut = np.asarray(predOut).ravel()
+
     outDF = pd.DataFrame({
         smilesCol: smilesOut,
         potencyCol: predOut,
@@ -414,8 +407,7 @@ def runOneCampaign(seedSmiles, campaignCfg, randomSeed, cfg, libraryEvolver, mcw
     if len(outDF) > 0:
         print(
             f"Finished {campaignLabel}: {len(outDF)} molecules | "
-            f"best targetError={outDF['targetError'].min():.4f} | "
-            f"best pPotency={outDF[potencyCol].max():.4f}",
+            f"best targetError={outDF['targetError'].min():.4f}",
             flush=True,
         )
     else:
@@ -441,11 +433,15 @@ def summarizeResults(allResults, cfg):
     resultDF["targetMatchRank"] = np.arange(1, len(resultDF) + 1)
 
     for tolerance in tolerances:
-        resultDF[getWithinColumnName(tolerance)] = resultDF["targetError"] <= float(tolerance)
+        resultDF[f"within_{str(tolerance).replace('.', 'p')}"] = resultDF["targetError"] <= float(tolerance)
 
-    within025 = getWithinColumnName(0.25)
+    within025 = "within_0p25"
     if within025 not in resultDF.columns:
         resultDF[within025] = resultDF["targetError"] <= 0.25
+
+    within050 = "within_0p5"
+    if within050 not in resultDF.columns:
+        resultDF[within050] = resultDF["targetError"] <= 0.50
 
     summaryDF = (
         resultDF.groupby("campaignBase")
@@ -458,6 +454,7 @@ def summarizeResults(allResults, cfg):
         .reset_index()
         .sort_values(["bestTargetError", "nWithin0p25"], ascending=[True, False])
     )
+
     return resultDF, summaryDF
 
 
@@ -472,7 +469,8 @@ def saveOutputs(seedDF, starterDF, resultDF, summaryDF, failedDF, cfg):
         return
 
     safeMkdir(outputDir)
-    seedDF.to_csv(outputDir / f"{prefix}_selected_seed_molecules.csv", index=False)
+
+    seedDF.to_csv(outputDir / f"{prefix}_diverse_targetClosest_seed_molecules.csv", index=False)
     starterDF.to_csv(outputDir / f"{prefix}_starter_seed_pPotency_values.csv", index=False)
 
     if len(resultDF) > 0:
@@ -491,100 +489,50 @@ def saveOutputs(seedDF, starterDF, resultDF, summaryDF, failedDF, cfg):
 
 
 # -----------------------------------------------------------------------------
-# Iterative potency enhancement loop
+# Main
 # -----------------------------------------------------------------------------
 
-def getNumericBest(inputDF, potencyCol):
-    values = pd.to_numeric(inputDF[potencyCol], errors="coerce").dropna()
-    if len(values) == 0:
-        raise ValueError(f"No numeric values found in potency column '{potencyCol}'")
-    return float(values.max())
+def main():
+    parser = argparse.ArgumentParser(description="Run MACAW inverse design with ART potency scoring")
+    parser.add_argument("config", help="Path to config.yaml")
+    args = parser.parse_args()
 
+    startTime = time.time()
+    cfg = loadConfig(args.config)
 
-def getLoopCfg(cfg):
-    # Supports either 'loop' or 'optimization_loop' in config.
-    return cfg.get("loop", cfg.get("optimization_loop", {})) or {}
+    requireKeys(cfg, ["input", "models", "columns", "target_potency", "seed_selection", "campaigns"], "root")
+    requireKeys(cfg["input"], ["csv"], "input")
+    requireKeys(cfg["models"], ["mcw_path", "art_model_path"], "models")
+    requireKeys(cfg["columns"], ["smiles", "potency"], "columns")
+    requireKeys(cfg["seed_selection"], ["n_seeds"], "seed_selection")
 
+    if not bool(cfg.get("runtime", {}).get("rdkit_warnings", False)):
+        RDLogger.DisableLog("rdApp.*")
 
-def isLoopEnabled(cfg):
-    return bool(getLoopCfg(cfg).get("enabled", False))
+    addPythonPaths(cfg.get("runtime", {}).get("extra_python_paths", []))
 
+    from macaw.generators import library_evolver
 
-def computeLoopTargets(initialBestPotency, cfg):
-    loopCfg = getLoopCfg(cfg)
-    stepFraction = float(loopCfg.get("step_fraction", 0.05))
-    totalFraction = float(loopCfg.get("total_improvement_fraction", 0.25))
-    targetMode = loopCfg.get("target_update_mode", "linear_from_initial_best")
+    inputDF = readInputCsv(
+        inputPath=cfg["input"]["csv"],
+        columnsCfg=cfg["columns"],
+        ioCfg=cfg.get("input", {}),
+    )
 
-    if targetMode not in ["linear_from_initial_best", "compound_from_initial_best", "from_current_seed_best"]:
-        raise ValueError(
-            "loop.target_update_mode must be one of: "
-            "linear_from_initial_best, compound_from_initial_best, from_current_seed_best"
-        )
+    print(f"Loaded input rows: {len(inputDF)}", flush=True)
 
-    if "n_designs" in loopCfg and loopCfg.get("n_designs") is not None:
-        nDesigns = int(loopCfg["n_designs"])
-    else:
-        nDesigns = int(np.ceil(totalFraction / stepFraction))
+    print("Loading MACAW embedder...", flush=True)
+    mcw = loadObject(cfg["models"]["mcw_path"], label="MACAW embedder")
 
-    if targetMode == "compound_from_initial_best":
-        targets = [initialBestPotency * ((1.0 + stepFraction) ** (i + 1)) for i in range(nDesigns)]
-    else:
-        # Also used as the cap for from_current_seed_best.
-        targets = [initialBestPotency * (1.0 + stepFraction * (i + 1)) for i in range(nDesigns)]
-
-    # Cap last target exactly at requested total improvement for linear/default mode.
-    finalTarget = initialBestPotency * (1.0 + totalFraction)
-    if targetMode in ["linear_from_initial_best", "from_current_seed_best"]:
-        targets = [min(t, finalTarget) for t in targets]
-
-    return targets, finalTarget
-
-
-def makeDesignConfig(baseCfg, designIndex, targetPotency, designDir, initialBestPotency, finalTargetPotency, inputStarterPath=None):
-    designCfg = copy.deepcopy(baseCfg)
-    designCfg["target_potency"] = float(targetPotency)
-
-    if "output" not in designCfg:
-        designCfg["output"] = {}
-    designCfg["output"]["output_dir"] = str(Path(designDir).resolve())
-
-    loopCfg = getLoopCfg(designCfg)
-    loopCfg["current_design_index"] = int(designIndex)
-    loopCfg["initial_best_seed_potency"] = float(initialBestPotency)
-    loopCfg["final_target_potency"] = float(finalTargetPotency)
-    loopCfg["resolved_target_potency"] = float(targetPotency)
-
-    if "loop" in designCfg:
-        designCfg["loop"] = loopCfg
-    elif "optimization_loop" in designCfg:
-        designCfg["optimization_loop"] = loopCfg
-    else:
-        designCfg["loop"] = loopCfg
-
-    if inputStarterPath is not None:
-        designCfg["input"] = copy.deepcopy(designCfg.get("input", {}))
-        designCfg["input"]["csv"] = str(Path(inputStarterPath).resolve())
-
-    return designCfg
-
-
-def runSingleDesign(inputDF, cfg, designIndex, libraryEvolver, mcw, artModelFn, designDir=None, initialBestPotency=None, finalTargetPotency=None):
-    columnsCfg = cfg["columns"]
-    potencyCol = columnsCfg["potency"]
-    outputDir = Path(cfg.get("output", {}).get("output_dir", ".")).expanduser().resolve()
-    if designDir is not None:
-        outputDir = Path(designDir).expanduser().resolve()
-        cfg = copy.deepcopy(cfg)
-        cfg.setdefault("output", {})["output_dir"] = str(outputDir)
-    safeMkdir(outputDir)
-
-    if initialBestPotency is not None and finalTargetPotency is not None:
-        dumpConfig(cfg, outputDir / f"config_design_{designIndex}.yaml")
+    print("Loading ART model...", flush=True)
+    artModel = loadObject(cfg["models"]["art_model_path"], label="ART model")
+    artModelFn = buildArtMeanModel(artModel, cfg.get("art", {}))
 
     seedDF, seedSmiles, starterSeedDF = selectSeeds(inputDF, cfg)
+    columnsCfg = cfg["columns"]
+    potencyCol = columnsCfg["potency"]
 
-    print(f"targetPotency: {float(cfg['target_potency']):.6f}", flush=True)
+    print(f"targetPotency: {float(cfg['target_potency'])}", flush=True)
     print(f"Selected seed molecules: {len(seedSmiles)}", flush=True)
     print(
         f"Starter seed pPotency range: {seedDF[potencyCol].min():.6f} to {seedDF[potencyCol].max():.6f}",
@@ -597,13 +545,15 @@ def runSingleDesign(inputDF, cfg, designIndex, libraryEvolver, mcw, artModelFn, 
     if "seedDiversityScore" in seedDF.columns:
         print(f"Median seed diversity score: {seedDF['seedDiversityScore'].median():.4f}", flush=True)
 
-    starterSeedDF.to_csv(outputDir / f"{cfg.get('output', {}).get('prefix', 'MACAW_generatedCompound')}_starter_seed_pPotency_values.csv", index=False)
-    seedDF.to_csv(outputDir / f"{cfg.get('output', {}).get('prefix', 'MACAW_generatedCompound')}_selected_seed_molecules.csv", index=False)
+    outputDir = Path(cfg.get("output", {}).get("output_dir", ".")).expanduser().resolve()
+    prefix = cfg.get("output", {}).get("prefix", "MACAW_generatedCompound")
+    safeMkdir(outputDir)
+    starterSeedDF.to_csv(outputDir / f"{prefix}_starter_seed_pPotency_values.csv", index=False)
+    seedDF.to_csv(outputDir / f"{prefix}_selected_seed_molecules.csv", index=False)
 
     allResults = []
     failedCampaigns = []
     saveEachCampaign = bool(cfg.get("output", {}).get("save_each_campaign", True))
-    prefix = cfg.get("output", {}).get("prefix", "MACAW_generatedCompound")
 
     for campaignCfg in cfg["campaigns"]:
         for randomSeed in cfg.get("random_seeds", [42]):
@@ -615,14 +565,15 @@ def runSingleDesign(inputDF, cfg, designIndex, libraryEvolver, mcw, artModelFn, 
                     campaignCfg=campaignCfg,
                     randomSeed=randomSeed,
                     cfg=cfg,
-                    libraryEvolver=libraryEvolver,
+                    libraryEvolver=library_evolver,
                     mcw=mcw,
                     model=artModelFn,
                 )
                 if len(campaignDF) > 0:
                     allResults.append(campaignDF)
                     if saveEachCampaign:
-                        campaignDF.to_csv(outputDir / f"{prefix}_{campaignLabel}.csv", index=False)
+                        campaignPath = outputDir / f"{prefix}_{campaignLabel}.csv"
+                        campaignDF.to_csv(campaignPath, index=False)
                 del campaignDF
                 gc.collect()
             except Exception as exc:
@@ -636,231 +587,12 @@ def runSingleDesign(inputDF, cfg, designIndex, libraryEvolver, mcw, artModelFn, 
     print("\nMULTI-CAMPAIGN SEARCH COMPLETE", flush=True)
     print(f"Total unique generated molecules: {len(resultDF)}", flush=True)
     if len(resultDF) > 0:
-        print(f"Best generated pPotency: {resultDF[potencyCol].max():.6f}", flush=True)
-        print(f"Molecules within +/-0.25 pPotency: {(resultDF['targetError'] <= 0.25).sum()}", flush=True)
+        print(f"Molecules within ±0.25 pPotency: {(resultDF['targetError'] <= 0.25).sum()}", flush=True)
     if len(summaryDF) > 0:
         print("\nCampaign summary:", flush=True)
         print(summaryDF.to_string(index=False), flush=True)
 
     saveOutputs(seedDF, starterSeedDF, resultDF, summaryDF, failedDF, cfg)
-
-    del allResults
-    gc.collect()
-    return resultDF, summaryDF, seedDF, starterSeedDF, failedDF
-
-
-def buildNextStarterDF(resultDF, cfg, designIndex):
-    columnsCfg = cfg["columns"]
-    smilesCol = columnsCfg["smiles"]
-    potencyCol = columnsCfg["potency"]
-    sourceCol = columnsCfg.get("source")
-    loopCfg = getLoopCfg(cfg)
-    carryCfg = loopCfg.get("carry_forward", {}) or {}
-
-    nNext = int(carryCfg.get("n_starters", cfg["seed_selection"].get("n_seeds", 300)))
-    minPotency = carryCfg.get("min_potency", None)
-    maxTargetError = carryCfg.get("max_target_error", None)
-
-    if resultDF is None or len(resultDF) == 0:
-        return pd.DataFrame()
-
-    nextDF = resultDF.copy()
-    nextDF[potencyCol] = pd.to_numeric(nextDF[potencyCol], errors="coerce")
-    nextDF = nextDF.dropna(subset=[smilesCol, potencyCol]).copy()
-
-    if minPotency is not None:
-        nextDF = nextDF[nextDF[potencyCol] >= float(minPotency)].copy()
-    if maxTargetError is not None and "targetError" in nextDF.columns:
-        nextDF = nextDF[nextDF["targetError"] <= float(maxTargetError)].copy()
-
-    nextDF = (
-        nextDF.sort_values(potencyCol, ascending=False)
-        .drop_duplicates(subset=[smilesCol], keep="first")
-        .head(nNext)
-        .reset_index(drop=True)
-    )
-
-    if sourceCol and sourceCol not in nextDF.columns:
-        nextDF[sourceCol] = f"design_{designIndex}_generated"
-
-    keepCols = [smilesCol, potencyCol]
-    stdCol = columnsCfg.get("std")
-    if stdCol and stdCol in nextDF.columns:
-        keepCols.append(stdCol)
-    if sourceCol and sourceCol in nextDF.columns:
-        keepCols.append(sourceCol)
-    for col in columnsCfg.get("additional_seed_columns", []) or []:
-        if col in nextDF.columns and col not in keepCols:
-            keepCols.append(col)
-
-    return nextDF[keepCols].copy()
-
-
-def runIterativeDesignLoop(initialInputDF, cfg, libraryEvolver, mcw, artModelFn):
-    columnsCfg = cfg["columns"]
-    potencyCol = columnsCfg["potency"]
-    loopCfg = getLoopCfg(cfg)
-    targetMode = loopCfg.get("target_update_mode", "linear_from_initial_best")
-    baseOutputDir = Path(cfg.get("output", {}).get("output_dir", ".")).expanduser().resolve()
-    designPrefix = loopCfg.get("design_dir_prefix", "design")
-    stopIfNoGenerated = bool(loopCfg.get("stop_if_no_generated", True))
-
-    safeMkdir(baseOutputDir)
-
-    initialBestPotency = getNumericBest(initialInputDF, potencyCol)
-    scheduledTargets, finalTargetPotency = computeLoopTargets(initialBestPotency, cfg)
-    print(f"Initial best seed pPotency: {initialBestPotency:.6f}", flush=True)
-    print(f"Final target pPotency cap: {finalTargetPotency:.6f}", flush=True)
-
-    currentInputDF = initialInputDF.copy()
-    loopRows = []
-
-    for designIndex, scheduledTarget in enumerate(scheduledTargets):
-        currentBestPotency = getNumericBest(currentInputDF, potencyCol)
-        if targetMode == "from_current_seed_best":
-            stepFraction = float(loopCfg.get("step_fraction", 0.05))
-            targetPotency = min(currentBestPotency * (1.0 + stepFraction), finalTargetPotency)
-        else:
-            targetPotency = scheduledTarget
-
-        designDir = baseOutputDir / f"{designPrefix}_{designIndex}"
-        safeMkdir(designDir)
-        starterPath = designDir / f"design_{designIndex}_input_starter_pool.csv"
-        currentInputDF.to_csv(starterPath, index=False)
-
-        designCfg = makeDesignConfig(
-            baseCfg=cfg,
-            designIndex=designIndex,
-            targetPotency=targetPotency,
-            designDir=designDir,
-            initialBestPotency=initialBestPotency,
-            finalTargetPotency=finalTargetPotency,
-            inputStarterPath=starterPath,
-        )
-        dumpConfig(designCfg, designDir / f"config_design_{designIndex}.yaml")
-
-        print("\n" + "=" * 80, flush=True)
-        print(f"DESIGN {designIndex}: inputBest={currentBestPotency:.6f} | target={targetPotency:.6f}", flush=True)
-        print("=" * 80, flush=True)
-
-        resultDF, summaryDF, seedDF, starterSeedDF, failedDF = runSingleDesign(
-            inputDF=currentInputDF,
-            cfg=designCfg,
-            designIndex=designIndex,
-            libraryEvolver=libraryEvolver,
-            mcw=mcw,
-            artModelFn=artModelFn,
-            designDir=designDir,
-            initialBestPotency=initialBestPotency,
-            finalTargetPotency=finalTargetPotency,
-        )
-
-        generatedBestPotency = np.nan
-        bestTargetError = np.nan
-        nWithin025 = 0
-        if len(resultDF) > 0:
-            generatedBestPotency = float(pd.to_numeric(resultDF[potencyCol], errors="coerce").max())
-            bestTargetError = float(resultDF["targetError"].min())
-            nWithin025 = int((resultDF["targetError"] <= 0.25).sum())
-
-        loopRows.append({
-            "designIndex": designIndex,
-            "designDir": str(designDir),
-            "inputBestPotency": currentBestPotency,
-            "targetPotency": targetPotency,
-            "seedCount": len(seedDF),
-            "nUniqueGenerated": len(resultDF),
-            "generatedBestPotency": generatedBestPotency,
-            "bestTargetError": bestTargetError,
-            "nWithin0p25": nWithin025,
-            "nFailedCampaigns": len(failedDF),
-        })
-        pd.DataFrame(loopRows).to_csv(baseOutputDir / "optimization_loop_summary.csv", index=False)
-
-        if len(resultDF) == 0:
-            print(f"No generated molecules in design_{designIndex}.", flush=True)
-            if stopIfNoGenerated:
-                print("Stopping loop because stop_if_no_generated=true.", flush=True)
-                break
-            else:
-                continue
-
-        nextInputDF = buildNextStarterDF(resultDF, designCfg, designIndex)
-        nextStarterPath = designDir / f"design_{designIndex}_next_high_potency_starters.csv"
-        nextInputDF.to_csv(nextStarterPath, index=False)
-        print(f"Next starter pool saved: {nextStarterPath} ({len(nextInputDF)} molecules)", flush=True)
-
-        if len(nextInputDF) == 0:
-            print("No next starter molecules available; stopping loop.", flush=True)
-            break
-
-        currentInputDF = nextInputDF
-        del resultDF, summaryDF, seedDF, starterSeedDF, failedDF, nextInputDF
-        gc.collect()
-
-    summaryPath = baseOutputDir / "optimization_loop_summary.csv"
-    print(f"\nOptimization loop summary saved to: {summaryPath}", flush=True)
-    return pd.DataFrame(loopRows)
-
-
-# -----------------------------------------------------------------------------
-# Main
-# -----------------------------------------------------------------------------
-
-def main():
-    parser = argparse.ArgumentParser(description="Run MACAW inverse design with iterative potency enhancement")
-    parser.add_argument("config", help="Path to config.yaml")
-    args = parser.parse_args()
-
-    startTime = time.time()
-    cfg = loadConfig(args.config)
-
-    requireKeys(cfg, ["input", "models", "columns", "seed_selection", "campaigns"], "root")
-    if not isLoopEnabled(cfg):
-        requireKeys(cfg, ["target_potency"], "root")
-    requireKeys(cfg["input"], ["csv"], "input")
-    requireKeys(cfg["models"], ["mcw_path", "art_model_path"], "models")
-    requireKeys(cfg["columns"], ["smiles", "potency"], "columns")
-    requireKeys(cfg["seed_selection"], ["n_seeds"], "seed_selection")
-
-    if not bool(cfg.get("runtime", {}).get("rdkit_warnings", False)):
-        RDLogger.DisableLog("rdApp.*")
-
-    addPythonPaths(cfg.get("runtime", {}).get("extra_python_paths", []))
-    from macaw.generators import library_evolver
-
-    inputDF = readInputCsv(
-        inputPath=cfg["input"]["csv"],
-        columnsCfg=cfg["columns"],
-        ioCfg=cfg.get("input", {}),
-    )
-    print(f"Loaded input rows: {len(inputDF)}", flush=True)
-
-    print("Loading MACAW embedder...", flush=True)
-    mcw = loadObject(cfg["models"]["mcw_path"], label="MACAW embedder")
-
-    print("Loading ART model...", flush=True)
-    artModel = loadObject(cfg["models"]["art_model_path"], label="ART model")
-    artModelFn = buildArtMeanModel(artModel, cfg.get("art", {}))
-
-    if isLoopEnabled(cfg):
-        runIterativeDesignLoop(
-            initialInputDF=inputDF,
-            cfg=cfg,
-            libraryEvolver=library_evolver,
-            mcw=mcw,
-            artModelFn=artModelFn,
-        )
-    else:
-        resultDF, summaryDF, seedDF, starterSeedDF, failedDF = runSingleDesign(
-            inputDF=inputDF,
-            cfg=cfg,
-            designIndex=0,
-            libraryEvolver=library_evolver,
-            mcw=mcw,
-            artModelFn=artModelFn,
-        )
-        del resultDF, summaryDF, seedDF, starterSeedDF, failedDF
 
     print(f"\nTotal runtime: {(time.time() - startTime) / 60.0:.2f} min", flush=True)
 

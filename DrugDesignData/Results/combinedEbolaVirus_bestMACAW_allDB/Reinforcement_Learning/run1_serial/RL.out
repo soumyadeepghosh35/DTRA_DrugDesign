@@ -9497,3 +9497,1158 @@ Job name: rl_potency_91dc64288b63
 Job type: enzymatic network expansion forward
 Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
 Job started on: 2026-05-13 16:57:56.808506
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2838
+Number of reactions: 4814
+Time used for network generation: 33.45 minutes
+
+Job name: rl_potency_69a6ae5cc1cc
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-13 17:31:29.447002
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 356
+Number of reactions: 516
+Time used for network generation: 5.27 minutes
+
+Job name: rl_potency_88c5f51093d7
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-13 17:36:50.319335
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 968
+Number of reactions: 1533
+Time used for network generation: 15.24 minutes
+
+Job name: rl_potency_7a55a42715c5
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-13 17:52:09.375368
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1847
+Number of reactions: 3013
+Time used for network generation: 52.91 minutes
+
+Job name: rl_potency_ef5c1be2d4c0
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-13 18:45:08.977695
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1673
+Number of reactions: 2709
+Time used for network generation: 40.32 minutes
+
+Job name: rl_potency_8d26cc085d23
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-13 19:25:33.321704
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1511
+Number of reactions: 2476
+Time used for network generation: 16.11 minutes
+
+Job name: rl_potency_b709090dc526
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-13 19:41:44.819273
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 4655
+Number of reactions: 7830
+Time used for network generation: 123.12 minutes
+
+Job name: rl_potency_bf64a40650bd
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-13 21:44:59.039330
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1876
+Number of reactions: 3041
+Time used for network generation: 33.03 minutes
+
+Job name: rl_potency_f375affd85be
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-13 22:18:05.734208
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 427
+Number of reactions: 655
+Time used for network generation: 6.18 minutes
+
+Job name: rl_potency_d6f082acb98e
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-13 22:24:20.675034
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 3738
+Number of reactions: 6180
+Time used for network generation: 41.56 minutes
+
+Job name: rl_potency_c8299a442e32
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-13 23:06:00.643126
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2274
+Number of reactions: 3711
+Time used for network generation: 22.84 minutes
+
+Job name: rl_potency_0c7b9e94d369
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-13 23:28:55.849368
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2809
+Number of reactions: 5489
+Time used for network generation: 36.92 minutes
+
+Job name: rl_potency_ff5e0163ab03
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 00:05:56.904530
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 758
+Number of reactions: 1064
+Time used for network generation: 8.59 minutes
+
+Job name: rl_potency_93f18329a753
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 00:14:36.932739
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 419
+Number of reactions: 543
+Time used for network generation: 4.90 minutes
+
+Job name: rl_potency_a2359dda7344
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 00:19:35.200121
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2724
+Number of reactions: 4604
+Time used for network generation: 31.95 minutes
+
+Job name: rl_potency_1dcd7a4d1b22
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 00:51:37.887756
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 933
+Number of reactions: 1390
+Time used for network generation: 12.71 minutes
+
+SMILES to Mol:   0%|          | 0/1 [00:00<?, ?it/s]SMILES to Mol: 100%|██████████| 1/1 [00:00<00:00, 3994.58it/s]
+Computing physchem properties:   0%|          | 0/1 [00:00<?, ?it/s]Computing physchem properties: 100%|██████████| 1/1 [00:00<00:00, 140.90it/s]
+Dropping last batch of size 1 to avoid issues with batch normalization     (dataset size = 1, batch_size = 64)
+model ensembles:   0%|          | 0/2 [00:00<?, ?it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles:  50%|█████     | 1/2 [00:00<00:00,  2.34it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles: 100%|██████████| 2/2 [00:00<00:00,  2.47it/s]model ensembles: 100%|██████████| 2/2 [00:00<00:00,  2.45it/s]
+Job name: rl_potency_ed83114c619c
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 01:04:26.178052
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 146
+Number of reactions: 174
+Time used for network generation: 2.85 minutes
+
+Job name: rl_potency_532380860601
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 01:07:21.301646
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 341
+Number of reactions: 489
+Time used for network generation: 4.44 minutes
+
+Job name: rl_potency_f23cd9056fbe
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 01:11:52.245319
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 255
+Number of reactions: 364
+Time used for network generation: 3.58 minutes
+
+Job name: rl_potency_7d252ddcc113
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 01:15:31.678649
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 268
+Number of reactions: 362
+Time used for network generation: 3.64 minutes
+
+SMILES to Mol:   0%|          | 0/1 [00:00<?, ?it/s]SMILES to Mol: 100%|██████████| 1/1 [00:00<00:00, 3883.61it/s]
+Computing physchem properties:   0%|          | 0/1 [00:00<?, ?it/s]Computing physchem properties: 100%|██████████| 1/1 [00:00<00:00, 152.43it/s]
+Dropping last batch of size 1 to avoid issues with batch normalization     (dataset size = 1, batch_size = 64)
+model ensembles:   0%|          | 0/2 [00:00<?, ?it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles:  50%|█████     | 1/2 [00:00<00:00,  2.31it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles: 100%|██████████| 2/2 [00:00<00:00,  2.55it/s]model ensembles: 100%|██████████| 2/2 [00:00<00:00,  2.51it/s]
+Job name: rl_potency_c1a8f7c540ff
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 01:19:15.039140
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 721
+Number of reactions: 1087
+Time used for network generation: 9.89 minutes
+
+Job name: rl_potency_ada4bd93949c
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 01:29:12.846250
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 729
+Number of reactions: 1289
+Time used for network generation: 8.96 minutes
+
+Job name: rl_potency_415b3a688ab0
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 01:38:14.749129
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 460
+Number of reactions: 667
+Time used for network generation: 5.78 minutes
+
+Job name: rl_potency_4f33236a2b65
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 01:44:05.808860
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 400
+Number of reactions: 602
+Time used for network generation: 5.22 minutes
+
+Job name: rl_potency_9fa30cd13b73
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 01:49:23.145290
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1487
+Number of reactions: 2359
+Time used for network generation: 25.58 minutes
+
+Job name: rl_potency_5f1d4a94a78b
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 02:15:03.028844
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 181
+Number of reactions: 210
+Time used for network generation: 2.21 minutes
+
+Job name: rl_potency_c25c6c26cea7
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 02:17:19.746735
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1226
+Number of reactions: 1665
+Time used for network generation: 10.01 minutes
+
+Job name: rl_potency_2ab04a124c8c
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 02:27:24.756755
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 662
+Number of reactions: 926
+Time used for network generation: 8.67 minutes
+
+Job name: rl_potency_6daa853405d0
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 02:36:09.327581
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1320
+Number of reactions: 2183
+Time used for network generation: 12.05 minutes
+
+SMILES to Mol:   0%|          | 0/1 [00:00<?, ?it/s]SMILES to Mol: 100%|██████████| 1/1 [00:00<00:00, 5461.33it/s]
+Computing physchem properties:   0%|          | 0/1 [00:00<?, ?it/s]Computing physchem properties: 100%|██████████| 1/1 [00:00<00:00, 170.63it/s]
+Dropping last batch of size 1 to avoid issues with batch normalization     (dataset size = 1, batch_size = 64)
+model ensembles:   0%|          | 0/2 [00:00<?, ?it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles:  50%|█████     | 1/2 [00:00<00:00,  2.37it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles: 100%|██████████| 2/2 [00:00<00:00,  2.51it/s]model ensembles: 100%|██████████| 2/2 [00:00<00:00,  2.49it/s]
+Job name: rl_potency_53864fce5ff2
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 02:48:17.602528
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 341
+Number of reactions: 513
+Time used for network generation: 4.18 minutes
+
+-------------------------------
+| time/              |        |
+|    fps             | 0      |
+|    iterations      | 1      |
+|    time_elapsed    | 669440 |
+|    total_timesteps | 1024   |
+-------------------------------
+Job name: rl_potency_e80e448a80f3
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 02:52:43.780614
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2493
+Number of reactions: 4040
+Time used for network generation: 41.53 minutes
+
+Job name: rl_potency_496e724ba5f2
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 03:34:21.057540
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 449
+Number of reactions: 626
+Time used for network generation: 5.46 minutes
+
+Job name: rl_potency_46cf0591fdef
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 03:39:53.139937
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1658
+Number of reactions: 2868
+Time used for network generation: 18.92 minutes
+
+Job name: rl_potency_ec180e369601
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 03:58:53.041450
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1455
+Number of reactions: 2216
+Time used for network generation: 16.84 minutes
+
+Job name: rl_potency_88b5fac2ff19
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 04:15:48.435954
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 848
+Number of reactions: 1233
+Time used for network generation: 9.61 minutes
+
+Job name: rl_potency_617a8948ead9
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 04:25:29.514225
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 293
+Number of reactions: 449
+Time used for network generation: 5.65 minutes
+
+Job name: rl_potency_281aecfa01fa
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 04:31:13.095591
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 995
+Number of reactions: 1405
+Time used for network generation: 12.36 minutes
+
+Job name: rl_potency_8d93fe375651
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 04:43:39.260641
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 944
+Number of reactions: 1280
+Time used for network generation: 12.19 minutes
+
+Job name: rl_potency_7bb23091d8fd
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 04:55:55.571289
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 238
+Number of reactions: 321
+Time used for network generation: 3.97 minutes
+
+Job name: rl_potency_5cefc5e9c89b
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 04:59:58.332767
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 187
+Number of reactions: 188
+Time used for network generation: 1.53 minutes
+
+Job name: rl_potency_bdb6af8a9852
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 05:01:34.537470
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 5251
+Number of reactions: 6753
+Time used for network generation: 31.00 minutes
+
+SMILES to Mol:   0%|          | 0/1 [00:00<?, ?it/s]SMILES to Mol: 100%|██████████| 1/1 [00:00<00:00, 5983.32it/s]
+Computing physchem properties:   0%|          | 0/1 [00:00<?, ?it/s]Computing physchem properties: 100%|██████████| 1/1 [00:00<00:00, 178.80it/s]
+Dropping last batch of size 1 to avoid issues with batch normalization     (dataset size = 1, batch_size = 64)
+model ensembles:   0%|          | 0/2 [00:00<?, ?it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles:  50%|█████     | 1/2 [00:00<00:00,  2.50it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles: 100%|██████████| 2/2 [00:00<00:00,  2.64it/s]model ensembles: 100%|██████████| 2/2 [00:00<00:00,  2.62it/s]
+Job name: rl_potency_005f0847aa54
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 05:32:41.679224
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1379
+Number of reactions: 2272
+Time used for network generation: 40.24 minutes
+
+Job name: rl_potency_d46ed5a1f01c
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 06:13:01.089265
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 445
+Number of reactions: 603
+Time used for network generation: 11.41 minutes
+
+Job name: rl_potency_4bf76bfc5fa3
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 06:24:29.960384
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2693
+Number of reactions: 4463
+Time used for network generation: 40.41 minutes
+
+Job name: rl_potency_42b7b6b767e1
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 07:04:59.616618
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1702
+Number of reactions: 2906
+Time used for network generation: 18.72 minutes
+
+Job name: rl_potency_23bca1c5d92b
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 07:23:47.809278
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 4549
+Number of reactions: 7503
+Time used for network generation: 142.03 minutes
+
+Job name: rl_potency_ec24721de2fb
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 09:45:56.206795
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 721
+Number of reactions: 1139
+Time used for network generation: 8.93 minutes
+
+Job name: rl_potency_26b86db71c2b
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 09:54:56.721654
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2028
+Number of reactions: 3454
+Time used for network generation: 22.25 minutes
+
+Job name: rl_potency_5d43817e76cb
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 10:17:16.885256
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 9980
+Number of reactions: 16016
+Time used for network generation: 291.05 minutes
+
+Job name: rl_potency_cb0a8dffccc2
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 15:08:29.482742
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 5611
+Number of reactions: 9573
+Time used for network generation: 120.38 minutes
+
+Job name: rl_potency_dee8f403b9fe
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 17:08:58.969947
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2029
+Number of reactions: 3378
+Time used for network generation: 26.58 minutes
+
+Job name: rl_potency_0d125a310ae1
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 17:35:38.918857
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 78
+Number of reactions: 64
+Time used for network generation: 1.67 minutes
+
+Job name: rl_potency_ab875065372a
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 17:37:23.322461
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 13501
+Number of reactions: 16824
+Time used for network generation: 194.79 minutes
+
+SMILES to Mol:   0%|          | 0/1 [00:00<?, ?it/s]SMILES to Mol: 100%|██████████| 1/1 [00:00<00:00, 3692.17it/s]
+Computing physchem properties:   0%|          | 0/1 [00:00<?, ?it/s]Computing physchem properties: 100%|██████████| 1/1 [00:00<00:00, 142.33it/s]
+Dropping last batch of size 1 to avoid issues with batch normalization     (dataset size = 1, batch_size = 64)
+model ensembles:   0%|          | 0/2 [00:00<?, ?it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles:  50%|█████     | 1/2 [00:00<00:00,  3.29it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles: 100%|██████████| 2/2 [00:00<00:00,  3.58it/s]model ensembles: 100%|██████████| 2/2 [00:00<00:00,  3.53it/s]
+Job name: rl_potency_5ec1e29ab2a8
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 20:52:24.915410
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 605
+Number of reactions: 790
+Time used for network generation: 7.64 minutes
+
+Job name: rl_potency_ed754f71cd50
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 21:00:07.888648
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1463
+Number of reactions: 2407
+Time used for network generation: 21.95 minutes
+
+Job name: rl_potency_919d30a943f0
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 21:22:09.665228
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 529
+Number of reactions: 704
+Time used for network generation: 7.42 minutes
+
+Job name: rl_potency_57cd82b6e096
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 21:29:39.239192
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 271
+Number of reactions: 359
+Time used for network generation: 3.77 minutes
+
+Job name: rl_potency_62e9bb002e3a
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 21:33:29.945885
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 352
+Number of reactions: 414
+Time used for network generation: 10.42 minutes
+
+SMILES to Mol:   0%|          | 0/1 [00:00<?, ?it/s]SMILES to Mol: 100%|██████████| 1/1 [00:00<00:00, 3030.57it/s]
+Computing physchem properties:   0%|          | 0/1 [00:00<?, ?it/s]Computing physchem properties: 100%|██████████| 1/1 [00:00<00:00, 138.83it/s]
+Dropping last batch of size 1 to avoid issues with batch normalization     (dataset size = 1, batch_size = 64)
+model ensembles:   0%|          | 0/2 [00:00<?, ?it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles:  50%|█████     | 1/2 [00:00<00:00,  2.20it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles: 100%|██████████| 2/2 [00:00<00:00,  2.34it/s]model ensembles: 100%|██████████| 2/2 [00:00<00:00,  2.32it/s]
+Job name: rl_potency_59dd854d9782
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 21:44:00.686534
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1343
+Number of reactions: 2037
+Time used for network generation: 16.61 minutes
+
+Job name: rl_potency_b33b5ace4a20
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 22:00:42.213701
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1459
+Number of reactions: 2059
+Time used for network generation: 22.01 minutes
+
+SMILES to Mol:   0%|          | 0/1 [00:00<?, ?it/s]SMILES to Mol: 100%|██████████| 1/1 [00:00<00:00, 3986.98it/s]
+Computing physchem properties:   0%|          | 0/1 [00:00<?, ?it/s]Computing physchem properties: 100%|██████████| 1/1 [00:00<00:00, 146.10it/s]
+Dropping last batch of size 1 to avoid issues with batch normalization     (dataset size = 1, batch_size = 64)
+model ensembles:   0%|          | 0/2 [00:00<?, ?it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles:  50%|█████     | 1/2 [00:00<00:00,  3.50it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles: 100%|██████████| 2/2 [00:00<00:00,  3.79it/s]model ensembles: 100%|██████████| 2/2 [00:00<00:00,  3.74it/s]
+Job name: rl_potency_053349bde91b
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 22:22:48.515154
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2036
+Number of reactions: 3434
+Time used for network generation: 29.03 minutes
+
+Job name: rl_potency_6bdd3d5239ea
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 22:51:55.343533
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 855
+Number of reactions: 1215
+Time used for network generation: 12.34 minutes
+
+Job name: rl_potency_136887340cf5
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 23:04:20.274608
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 993
+Number of reactions: 1752
+Time used for network generation: 11.15 minutes
+
+Job name: rl_potency_9c454138aea3
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 23:15:33.734184
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 903
+Number of reactions: 1613
+Time used for network generation: 17.92 minutes
+
+Job name: rl_potency_5c5f4fd91e95
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 23:33:33.511900
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 423
+Number of reactions: 608
+Time used for network generation: 5.69 minutes
+
+Job name: rl_potency_7bf9a269c518
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-14 23:39:19.594693
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 4178
+Number of reactions: 5612
+Time used for network generation: 62.68 minutes
+
+Job name: rl_potency_09d24ca83844
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 00:42:07.393982
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 433
+Number of reactions: 684
+Time used for network generation: 5.92 minutes
+
+Job name: rl_potency_f63eb10b0dd0
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 00:48:07.023545
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 453
+Number of reactions: 704
+Time used for network generation: 6.03 minutes
+
+Job name: rl_potency_8c5ff480a77b
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 00:54:13.438231
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 387
+Number of reactions: 578
+Time used for network generation: 7.34 minutes
+
+Job name: rl_potency_36022af6ff56
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 01:01:38.341968
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2420
+Number of reactions: 4302
+Time used for network generation: 33.67 minutes
+
+Job name: rl_potency_cc44830e9e4a
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 01:35:23.596744
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2126
+Number of reactions: 3830
+Time used for network generation: 28.26 minutes
+
+Job name: rl_potency_12812c5222e2
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 02:03:44.556562
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 248
+Number of reactions: 350
+Time used for network generation: 3.54 minutes
+
+SMILES to Mol:   0%|          | 0/1 [00:00<?, ?it/s]SMILES to Mol: 100%|██████████| 1/1 [00:00<00:00, 3339.41it/s]
+Computing physchem properties:   0%|          | 0/1 [00:00<?, ?it/s]Computing physchem properties: 100%|██████████| 1/1 [00:00<00:00, 143.19it/s]
+Dropping last batch of size 1 to avoid issues with batch normalization     (dataset size = 1, batch_size = 64)
+model ensembles:   0%|          | 0/2 [00:00<?, ?it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles:  50%|█████     | 1/2 [00:00<00:00,  3.64it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles: 100%|██████████| 2/2 [00:00<00:00,  4.10it/s]model ensembles: 100%|██████████| 2/2 [00:00<00:00,  4.02it/s]
+Job name: rl_potency_29f4528abdab
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 02:07:21.922082
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 65
+Number of reactions: 55
+Time used for network generation: 1.17 minutes
+
+Job name: rl_potency_b74a0e3004e4
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 02:08:36.613780
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1170
+Number of reactions: 1737
+Time used for network generation: 15.59 minutes
+
+Job name: rl_potency_a6247f558637
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 02:24:16.769558
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 5269
+Number of reactions: 10231
+Time used for network generation: 97.86 minutes
+
+Job name: rl_potency_6c88ececc6bf
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 04:02:14.558152
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1256
+Number of reactions: 2007
+Time used for network generation: 21.74 minutes
+
+Job name: rl_potency_b1fc4f61a7ae
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 04:24:03.860317
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 967
+Number of reactions: 1567
+Time used for network generation: 12.86 minutes
+
+Job name: rl_potency_119e4bddc1d0
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 04:37:00.006034
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 386
+Number of reactions: 607
+Time used for network generation: 4.89 minutes
+
+Job name: rl_potency_d3638bf2d92c
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 04:41:57.566243
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 961
+Number of reactions: 1416
+Time used for network generation: 28.01 minutes
+
+Job name: rl_potency_14d61e720004
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 05:10:02.429475
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 813
+Number of reactions: 1134
+Time used for network generation: 19.92 minutes
+
+Job name: rl_potency_594e3513182e
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 05:30:01.988681
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2748
+Number of reactions: 3952
+Time used for network generation: 26.95 minutes
+
+Job name: rl_potency_5d8ff5b0413d
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 05:57:04.716735
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2652
+Number of reactions: 4017
+Time used for network generation: 27.36 minutes
+
+Job name: rl_potency_893dc5f983ec
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 06:24:31.911778
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1918
+Number of reactions: 2758
+Time used for network generation: 20.74 minutes
+
+Job name: rl_potency_d42f3ec6a332
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 06:45:21.157958
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 679
+Number of reactions: 1083
+Time used for network generation: 13.23 minutes
+
+SMILES to Mol:   0%|          | 0/1 [00:00<?, ?it/s]SMILES to Mol: 100%|██████████| 1/1 [00:00<00:00, 2548.18it/s]
+Computing physchem properties:   0%|          | 0/1 [00:00<?, ?it/s]Computing physchem properties: 100%|██████████| 1/1 [00:00<00:00, 126.30it/s]
+Dropping last batch of size 1 to avoid issues with batch normalization     (dataset size = 1, batch_size = 64)
+model ensembles:   0%|          | 0/2 [00:00<?, ?it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles:  50%|█████     | 1/2 [00:00<00:00,  3.59it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+Predicting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 0:00:00 • 0:00:00 0.00it/s  
+model ensembles: 100%|██████████| 2/2 [00:00<00:00,  4.03it/s]model ensembles: 100%|██████████| 2/2 [00:00<00:00,  3.95it/s]
+Job name: rl_potency_7f0605212f2c
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 06:58:40.285362
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 2400
+Number of reactions: 4068
+Time used for network generation: 64.51 minutes
+
+Job name: rl_potency_9cc25e4dfe9a
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 08:03:16.523544
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 725
+Number of reactions: 1137
+Time used for network generation: 8.69 minutes
+
+Job name: rl_potency_459b9f754486
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 08:12:02.219862
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 528
+Number of reactions: 818
+Time used for network generation: 10.21 minutes
+
+Job name: rl_potency_a4e2ba9b3750
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 08:22:19.423824
+Number of generations: 2
+Number of operators loaded: 3571
+Number of molecules before expantion (including cofactors): 42
+Number of molecules after expantion (including cofactors): 1040
+Number of reactions: 1729
+Time used for network generation: 18.54 minutes
+
+Job name: rl_potency_50f8e8881b30
+Job type: enzymatic network expansion forward
+Ruleset: JN3604IMT (JN3604IMT_rules.tsv)
+Job started on: 2026-05-15 08:40:56.355015

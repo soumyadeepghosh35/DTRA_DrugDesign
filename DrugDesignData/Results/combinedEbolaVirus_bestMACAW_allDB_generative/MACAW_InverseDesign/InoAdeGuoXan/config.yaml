@@ -7,7 +7,7 @@ runtime:
   rdkit_warnings: false
 
 input:
-  csv: ../../RemdesivirOnly_DORAnetGenerated_ARTprediction.csv
+  csv: ../../combinedEbola_allDORAnetGenerated_Antivirals_ARTprediction.csv
   read_all_columns: false
   max_input_rows: null
 
