@@ -32,7 +32,7 @@ art:
   - y_mean
 seed_selection:
   method: diverse_then_target_closest
-  n_seeds: 1000
+  n_seeds: 300
   diversity:
     similarity_threshold: 0.75
     diversity_weight: 0.75
@@ -50,7 +50,7 @@ loop:
   n_designs: 10
   stop_if_no_generated: true
   carry_forward:
-    n_starters: 1000
+    n_starters: 300
     min_potency: null
     max_target_error: null
   current_design_index: 2

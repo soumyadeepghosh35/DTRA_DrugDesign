@@ -1,1 +1,0 @@
-python runMACAW_InvDsg.py config.yaml > InvDsg.out 
