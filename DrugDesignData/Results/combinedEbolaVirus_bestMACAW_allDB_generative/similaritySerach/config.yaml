@@ -1,0 +1,119 @@
+job:
+  name: combinedEbola_trainingSet_similarity
+  outputDir: trainingSet_similarity_results/combinedEbola
+
+runtime:
+  randomSeed: 42
+  nJobs: 16
+  progressEvery: 10000
+
+columns:
+  smilesCol: Canonical_SMILES
+
+fingerprint:
+  radius: 2
+  nBits: 2048
+
+preprocessing:
+  dropDuplicateSmiles: true
+  removeExternalTrainingOverlap: false
+
+training:
+  label: Training set
+  csvPath: ../combinedEbolaVirusData_allDB_MLready.csv
+  potencyCol: pPotency
+  compoundIdCol: compound_id
+  strainCol: StrainClassifier
+  color: orange
+  marker: o
+  size: 22
+  alpha: 0.80
+  selection:
+    nToUse: null
+    sortCol: pPotency
+    ascending: false
+
+externalSelectionDefaults:
+  mode: diverse
+  nToUse: 5000
+  sortCol: pPotency_prediction
+  ascending: false
+  topPotencyPoolSize: 10000
+
+externalDatasets:
+  - label: DORAnet generated antivirals
+    csvPath: ../combinedEbola_allDORAnetGenerated_Antivirals_ARTprediction.csv
+    potencyCol: pPotency_prediction
+    stdCol: pPotency_std
+    ic50Col: "IC50 (µM)"
+    rankCol: Rank
+    color: blue
+    marker: "+"
+    size: 70
+    alpha: 0.85
+
+  - label: Remdesivir-only DORAnet
+    csvPath: ../RemdesivirOnly_DORAnetGenerated_ARTprediction.csv
+    potencyCol: pPotency_prediction
+    stdCol: pPotency_std
+    ic50Col: "IC50 (µM)"
+    rankCol: Rank
+    color: red
+    marker: "+"
+    size: 70
+    alpha: 0.85
+
+  - label: Buyable antivirals
+    csvPath: ../combinedEbolaVirus_all_Buyable_AntiVirals_ARTprediction.csv
+    potencyCol: pPotency_prediction
+    stdCol: pPotency_std
+    ic50Col: "IC50 (µM)"
+    rankCol: Rank
+    color: green
+    marker: "+"
+    size: 70
+    alpha: 0.85
+
+similarity:
+  categoryBins: ["-inf", 0.40, 0.70, "inf"]
+  categoryLabels:
+    - Far from training set
+    - Moderately close
+    - Close to training set
+  thresholdLines: [0.40, 0.70]
+
+embedding:
+  enabled: true
+  method: mds
+  mds:
+    nInit: 4
+    maxIter: 500
+    eps: 0.001
+    distanceNJobs: 16
+    nJobs: 16
+  svd:
+    nIter: 7
+
+plots:
+  save: true
+  dpi: 600
+  gridAlpha: 0.2
+
+  legendOutside: true
+  legendLoc: center left
+  legendBboxToAnchor: [1.02, 0.5]
+  tightLayoutRect: [0, 0, 0.78, 1]
+
+  potencyBins: 25
+  potencyFigSize: [9, 5]
+
+  similarityBins: 21
+  similarityFigSize: [8, 5]
+
+  embeddingFigSize: [18, 7]
+
+  makePotencyVsSimilarityPlot: true
+  potencyVsSimilarityFigSize: [12, 5]
+
+  make3DPlot: false
+  potency3DFigSize: [10, 8]
