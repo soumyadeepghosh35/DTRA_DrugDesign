@@ -2658,7 +2658,6 @@ def saveComparisonPlot(seedDF: pd.DataFrame, generatedDF: pd.DataFrame, outputDi
     plt.xlabel("Predicted pPotency")
     plt.title("Potency-only RL candidates compared with seed compounds")
     plt.legend()
-    plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(plotPath, dpi=300)
     plt.close()

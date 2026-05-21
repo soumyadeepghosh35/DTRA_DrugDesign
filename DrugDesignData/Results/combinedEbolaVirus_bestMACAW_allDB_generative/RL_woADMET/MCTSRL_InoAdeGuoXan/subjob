@@ -1,0 +1,4 @@
+export PYTHONPATH=/users/sghosh6/DTRA_project/MACAW/DrugDesignData/Results/combinedEbolaVirus_bestMACAW_allDB_generative/RL_woADMET/InoAdeGuoXan:$PYTHONPATH
+
+#python runMCTSRL.py config_test.yaml
+python runMCTSRL.py config_gen1.yaml > MCTSRL_gen1.out

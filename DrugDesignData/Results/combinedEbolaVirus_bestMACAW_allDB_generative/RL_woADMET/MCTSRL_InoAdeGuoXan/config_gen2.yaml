@@ -1,0 +1,184 @@
+# Run with: python runMCTSRL.py config_mctsrl_gen3.yaml
+# Purpose: potency-only MCTS-RL search using DORAnet actions and ART reward.
+
+runtime:
+  force_thread_env: true
+  omp_num_threads: 16
+  mkl_num_threads: 1
+  openblas_num_threads: 1
+  numexpr_num_threads: 1
+
+project_paths:
+  doranet_path: /users/sghosh6/DTRA_project/MACAW/doranet
+  art_path: /users/sghosh6/DTRA_project/MACAW/AutomatedRecommendationTool
+  extra_python_paths: [., ..]
+
+output:
+  output_dir: ./MCTSRL_gen3
+  exclude_seed_molecules_from_generated: true
+
+mode:
+  run_smoke_tests: false
+  smoke_test_n: 2
+  smoke_mcts_simulations: 4
+
+seed:
+  seed_csv: ../../RemdesivirOnly_DORAnetGenerated_ARTprediction.csv
+  smiles_col: SMILES
+  max_seeds: 100
+  minimum_columns: [SMILES, pPotency_prediction]
+  required_columns: [SMILES, pPotency_prediction, pPotency_std, pPotency_lower_95CI, pPotency_upper_95CI]
+  selection:
+    method: top_potency_diverse
+    potency_col: pPotency_prediction
+    uncertainty_col: null
+    similarity_threshold: 0.80
+    fingerprint_radius: 2
+    fingerprint_bits: 2048
+    prefilter_multiplier: 20
+  sampling:
+    method: potency_softmax
+    potency_col: pPotency_prediction
+    temperature: 0.20
+    min_weight: 0.000001
+
+macaw:
+  transformer_path: ../../combinedEbolaVirusData_allDB_MACAW_transformer.joblib
+
+art:
+  model_path: ../../ART_MACAW/ART_results/art.cpkl
+  output_dir: ./ART_results
+  input_feature_prefix: MACAW_
+
+doranet:
+  ruleset: JN3604IMT
+  gen: 2
+  max_raw_products: 1024
+  max_actions: 32
+  action_selection: art_ranked_diverse
+  action_rank_score:
+    potency: 0.45
+    parent_delta: 0.25
+    frontier_delta: 0.30
+  diversity:
+    fingerprint_radius: 2
+    fingerprint_bits: 2048
+    max_tanimoto_to_selected: 0.90
+  candidate_filters:
+    exclude_seed_molecules: true
+    remove_dummy_atoms: true
+    remove_multifragment: true
+    require_carbon: true
+    min_heavy_atoms: 12
+    max_heavy_atoms: 120
+    allowed_elements: [C, N, O, S, P, F, Cl, Br, I]
+  job_prefix: mctsrl_frontier_gen3
+  max_atoms_mode: from_seed_pool
+  max_atoms_multiplier: 1.5
+  max_atoms_elements: [C, N, O, S]
+  network_subdir: doranet_networks
+  action_cache_enabled: true
+  action_cache_subdir: action_cache
+  precompute_seed_actions: true
+  precompute_parallel: true
+  precompute_num_workers: 16
+  precompute_worker_omp_threads: 1
+  precompute_fail_fast: false
+
+# Kept for compatibility with runRL helper functions.
+rl:
+  max_steps: 3
+  max_actions: 32
+  fingerprint_bits: 2048
+
+reward:
+  potencyTargetMode: best_seed_percent_increase
+  potencyTargetPercentIncrease: 0.10
+  potencyScale: 0.35
+  deltaPotencyTarget: 0.05
+  deltaPotencyScale: 0.08
+  frontierDeltaTarget: 0.00
+  frontierDeltaScale: 0.08
+  minRouteLength: 1
+  earlyStopPenalty: -0.75
+  invalidActionPenalty: -0.50
+  invalidActionTerminates: true
+  weights:
+    potency: 0.25
+    deltaPotency: 0.25
+    frontierDelta: 0.50
+
+multi_objective:
+  enabled: true
+  preference_sets:
+    potency_frontier:
+      potency: 0.25
+      deltaPotency: 0.25
+      frontierDelta: 0.50
+
+# New block used by runMCTSRL.py.
+mcts:
+  enabled: true
+  top_seed_count: 100
+  num_simulations_per_seed: 96
+  max_depth: 3
+  exploration_constant: 1.25
+  discount_factor: 1.0
+  prior_temperature: 0.70
+  expansion_strategy: prior_order
+  expand_top_k: null
+  rollout_policy: rank_softmax
+  rollout_temperature: 0.35
+  rollout_top_k: 12
+  add_intermediate_candidates: true
+  progressive_widening:
+    enabled: true
+    k: 2.0
+    alpha: 0.50
+  random_seed: 42
+  max_unique_candidates: 5000
+  output_csv: mctsrl_frontier_generated_candidates.csv
+  evaluated_output_csv: mctsrl_all_evaluated_candidates.csv
+  edge_output_csv: mctsrl_tree_edges.csv
+  root_summary_csv: mctsrl_root_summary.csv
+
+pareto:
+  enabled: true
+  use_during_training: false
+  initialize_with_seeds: true
+  non_dominated_bonus: 0.00
+  dominated_penalty: 0.00
+  annotated_output_csv: mctsrl_frontier_candidates_with_pareto.csv
+  front_output_csv: mctsrl_frontier_pareto_front.csv
+  ranked_front_output_csv: mctsrl_frontier_pareto_front_ranked.csv
+  objectives:
+    pPotency_prediction: maximize
+    deltaPotency: maximize
+    frontierDeltaPotency: maximize
+  ranking:
+    enabled: true
+    method: percentile
+    pPotency_prediction: 0.25
+    deltaPotency: 0.25
+    frontierDeltaPotency: 0.50
+
+diagnostics:
+  potency_beam_search:
+    enabled: true
+    top_seed_count: 100
+    max_depth: 2
+    beam_width: 32
+    top_output_rows: 500
+    output_csv: diagnostic_doranet_beam_frontier.csv
+
+# PPO training/rollout blocks are intentionally not used by runMCTSRL.py.
+training:
+  enabled: false
+
+rollout:
+  enabled: false
+  output_csv: mctsrl_frontier_generated_candidates.csv
+
+plotting:
+  enabled: true
+  output_png: mctsrl_frontier_generated_vs_seed_potency.png

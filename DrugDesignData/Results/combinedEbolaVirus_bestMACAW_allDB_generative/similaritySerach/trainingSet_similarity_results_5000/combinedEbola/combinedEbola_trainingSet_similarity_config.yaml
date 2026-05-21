@@ -35,7 +35,7 @@ training:
 
 externalSelectionDefaults:
   mode: diverse
-  nToUse: 10000
+  nToUse: 5000
   sortCol: pPotency_prediction
   ascending: false
   topPotencyPoolSize: 10000
