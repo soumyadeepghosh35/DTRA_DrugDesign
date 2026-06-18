@@ -1,0 +1,124 @@
+# DORAnet targeted multi-generation pathway generation config
+# Run:
+#   python doranet_pathways_target_multi_gen.py config_doranet_target_multi_gen.yaml
+
+# Path to the local DORAnet repository root, the folder containing the doranet/ package.
+doranetPath: "/users/sghosh6/DTRA_project/MACAW/doranet"
+
+# Output folder where one subfolder per target/generation job will be created.
+outputDir: "."
+
+# Job folder prefix. Final job names become, for example:
+# high_pPotency_molecule_pathway1_wGen1
+# high_pPotency_molecule_pathway1_wGen2
+# high_pPotency_molecule_pathway1_wGen3
+baseJobPrefix: "high_pPotency_molecule_pathway"
+generationSuffixTemplate: "_wGen{generation}"
+
+# Run these DORAnet generation depths separately.
+# For each generation N, the script uses:
+#   generate_network(..., gen=N)
+#   pathway_finder(..., search_depth=N, max_num_rxns=N)
+generationsToRun: [1, 2, 3]
+searchDepthEqualsGeneration: true
+maxNumRxnsEqualsGeneration: true
+
+# true means Gen1 keeps exactly 1-step pathways,
+# Gen2 keeps exactly 2-step pathways,
+# Gen3 keeps exactly 3-step pathways.
+# false means GenN can include pathways up to N steps.
+filterExactNumRxns: true
+exactNumRxnsEqualsGeneration: true
+
+# Parallel jobs. Total jobs = number_of_targets * number_of_generations.
+numParallelJobs: 8
+numProcess: 1
+
+# -----------------------------
+# User-requested target input
+# -----------------------------
+# Priority order used by the script:
+#   1. targetSmiles
+#   2. targetSmilesList
+#   3. targetsCsvPath + targetsColumn
+
+# Use this for one target only, otherwise set null.
+targetSmiles: null
+
+# Use this for a small explicit list of targets, otherwise set null.
+targetSmilesList: null
+
+# Use this for a CSV of targets.
+targetsCsvPath: "../../../combinedEbola_allDORAnetGenerated_Antivirals_wARTprediction_top20.csv"
+targetsColumn: "Canonical_SMILES"
+
+# Optional subset of CSV row numbers / target indices to run. null = all.
+targetsToTest: null
+
+# -----------------------------
+# DORAnet network generation
+# -----------------------------
+starters:
+  - "C1=NC2=C(C(=O)N1)N=CN2[C@H]3[C@@H]([C@@H]([C@H](O3)CO)O)O"
+
+helpers:
+  - "C#N"
+  - "N"
+  - "S"
+  - "[H][H]"
+  - "O=S=O"
+  - "N#CO"
+  - "O=S(=O)(O)O"
+  - "[Br][Br]"
+  - "O=NO"
+  - "O"
+  - "C=O"
+  - "NO"
+  - "N#N"
+  - "CO"
+  - "O=[N+]([O-])O"
+  - "O=S(O)O"
+  - "Br"
+  - "O=O"
+  - "O=C=O"
+  - "[C-]#[O+]"
+  - "C=C"
+
+maxAtoms:
+  C: 15
+  N: 6
+  O: 8
+  S: 3
+
+direction: "forward"
+ruleset: "JN3604IMT"
+
+# -----------------------------
+# DORAnet pathway search
+# -----------------------------
+# Important: the script passes target=userTarget, not allTargets.
+# minRxnAtomEconomy=0.0 is useful for debugging because multi-product enzymatic
+# reactions can be pruned by 0.3. After confirming pathways exist, try 0.3.
+minRxnAtomEconomy: 0.0
+
+sanitize: true
+removePureHelpersRxns: false
+transformEnolsFlag: false
+considerNameDifference: true
+
+# Ranking is run after exact-step filtering if filterExactNumRxns=true.
+runRanking: true
+
+# Visualization is slow and can require Graphviz/pygraphviz; keep false for batch generation.
+runVisualization: false
+
+# Output summary CSV saved in outputDir.
+summaryCsv: "job_summary.csv"
+
+# Optional ranking weights. null = DORAnet default.
+weights: null
+coolReactions: null
+reaxysResultName: null
+excludeSmiles: null
+reaxysRxnColor: "blue"
+normalRxnColor: "black"
