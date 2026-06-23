@@ -2,7 +2,7 @@
 # run as (inside art environment): python runART.py art_config.yaml > art.out
 
 # Input data
-baseDataDir: ".."
+baseDataDir: "../../"
 modelBuildingDataSubdir: "."
 
 # Output folder
