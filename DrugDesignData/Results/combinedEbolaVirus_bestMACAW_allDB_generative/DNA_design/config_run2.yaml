@@ -1,0 +1,59 @@
+# DORAnet folder-wise pathway reconstruction config, v6
+# Run from your DNA_design or working directory:
+#   python doranet_pathway_reconstruct_v6.py config_doranet_pathway_v6.yaml
+#
+# This config does NOT use reactionDF.csv or targetCompoundDir_DF.csv.
+# It reads each DORAnet job folder directly:
+#   doranet_jobs_dir/high_pPotency_molecule_pathway*/reproDoranetJob.py
+#   doranet_jobs_dir/high_pPotency_molecule_pathway*/*.json
+
+paths:
+  # User-requested DORAnet job root
+  doranet_jobs_dir: "../DORAnet/InoAdeGuoXan/PATHWAY_reconstruction_run2/"
+
+  # Output directory for CSV files. Relative path is resolved from the directory where you run the script.
+  output_dir: "pathway_reconstruction_results_run2"
+
+  # Script inside each DORAnet job folder containing jobName, starters, helpers, target, generations.
+  job_script_name: "reproDoranetJob.py"
+
+  # Preferred JSON file name. {jobName} is replaced by jobName parsed from reproDoranetJob.py.
+  preferred_network_json_name: "{jobName}_network_pretreated.json"
+
+  # Fallback JSON patterns checked inside each folder.
+  reaction_json_globs:
+    - "*_network_pretreated.json"
+    - "*.json"
+
+canonicalization:
+  # true = match molecules by connectivity-only canonical SMILES.
+  # This helps if DORAnet products lose exact stereochemical labels.
+  remove_stereochemistry_for_matching: true
+
+settings:
+  route_mode: "fixed_depth_product_to_reactant_overlap"
+
+  # Search exact 1-step, 2-step, and 3-step pathways independently.
+  search_depths: [1, 2, 3]
+  exact_depth: true
+
+  # Keep true so depths larger than the folder's generations value are skipped.
+  use_generations_as_max_depth: true
+
+  # Used only if search_depths is null or generations is missing.
+  explore_depths_up_to_generations: true
+  default_depth: 3
+
+  # Folder selection. Leave null to process all folders with reproDoranetJob.py.
+  only_dir_names: null
+  max_folders: null
+
+  # Search limits to control combinatorial explosion.
+  max_routes_per_folder: 10000
+  max_parent_candidates_per_reactant: 4000
+
+  # Usually keep false: do not reuse the same reaction twice in one route.
+  allow_reuse_reaction: false
+
+  # Usually keep false: remove routes that use the target as an upstream reactant.
+  allow_target_as_reactant: false

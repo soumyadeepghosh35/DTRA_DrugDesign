@@ -1,0 +1,61 @@
+input:
+  SMILESfile: ../../combinedEbola_allDORAnetGenerated_Antivirals_wARTprediction_top20.csv
+  smiles_column: Canonical_SMILES
+  smiles_column_candidates:
+  - Canonical_SMILES
+  - canonical_smiles
+  - SMILES
+  - Smiles
+  - smiles
+  start_index: 0
+  num_smiles: null
+  deduplicate_smiles: false
+  resolved_smiles_column: Canonical_SMILES
+output:
+  directory: doranet_output_gen1
+  overwrite_existing_output_dir: true
+  overwrite_existing_starter_dirs: true
+  save_generation_config: true
+  save_starter_config: true
+parallel:
+  num_workers: 10
+network:
+  generations: 1
+  ruleset: JN3604IMT
+  direction: forward
+max_atoms:
+  mode: per_starter
+  elements:
+  - C
+  - N
+  - O
+  - S
+  multiplier: 1.5
+  rounding: ceil
+  minimum:
+    C: 0
+    N: 0
+    O: 0
+    S: 0
+validation:
+  fail_on_invalid_smiles: true
+  expected_num_starters: 20
+post_processing:
+  run_one_step: true
+starter:
+  starter_idx: 8
+  input_csv_row_index: 8
+  starter_smiles: CC(Cl)[C@H]1O[C@@H](n2cnc3c(NC=O)ncnc32)[C@H](O)[C@@H]1O
+  job_name: starter_00008_gen1
+  starter_output_directory: doranet_output_gen1/starter_00008
+  atom_counts:
+    C: 12
+    N: 5
+    O: 4
+    S: 0
+  resolved_max_atoms: &id001
+    C: 18
+    N: 8
+    O: 6
+    S: 0
+resolved_max_atoms: *id001

@@ -1,0 +1,70 @@
+# DORAnet targeted multi-generation pathway generation config
+# Run: python doranet_pathways_multiGen.py config_doranet_multiGen.yaml
+
+doranetPath: "/users/sghosh6/DTRA_project/MACAW/doranet"
+outputDir: "."
+baseJobPrefix: "high_pPotency_molecule_pathway"
+generationSuffixTemplate: "_wGen{generation}"
+numParallelJobs: 8
+
+# Generation depths to run separately, each as its own job.
+generationsToRun: [1, 2, 3]
+searchDepthEqualsGeneration: true
+maxNumRxnsEqualsGeneration: true
+
+# true keeps exactly N-step pathways per generation N; false allows <=N steps.
+filterExactNumRxns: true
+exactNumRxnsEqualsGeneration: true
+
+# Targets: CSV + column (set targetSmiles or targetSmilesList instead for single/few targets).
+targetsCsvPath: "../../../combinedEbola_allDORAnetGenerated_Antivirals_wARTprediction_top20.csv"
+targetsColumn: "Canonical_SMILES"
+
+# Network generation.
+starters:
+  - "C1=NC2=C(C(=O)N1)N=CN2[C@H]3[C@@H]([C@@H]([C@H](O3)CO)O)O"
+helpers:
+  - "C#N"
+  - "N"
+  - "S"
+  - "[H][H]"
+  - "O=S=O"
+  - "N#CO"
+  - "O=S(=O)(O)O"
+  - "[Br][Br]"
+  - "O=NO"
+  - "O"
+  - "C=O"
+  - "NO"
+  - "N#N"
+  - "CO"
+  - "O=[N+]([O-])O"
+  - "O=S(O)O"
+  - "Br"
+  - "O=O"
+  - "O=C=O"
+  - "[C-]#[O+]"
+  - "C=C"
+maxAtoms:
+  C: 15
+  N: 6
+  O: 8
+  S: 3
+direction: "forward"
+ruleset: "JN3604IMT"
+
+# Reaction thermodynamics. "pathermo" is the Benson group-additivity calculator the
+# published DORAnet paper actually used (github.com/dmdqy/pathermo), with Joback
+# (pip install thermo) as an automatic fallback for molecules pathermo's Benson
+# group set can't resolve -- notably fused polycyclic heteroaromatics like the
+# purine scaffold in your starter molecule. No action needed: the fallback is
+# built into the "pathermo" backend itself.
+thermoCalculator: "pathermo"
+maxRxnThermoChange: 15
+thermoRequired: true
+
+# Pathway search. minRxnAtomEconomy 0.0 for debugging; try 0.3 once pathways exist.
+minRxnAtomEconomy: 0.0
+runRanking: true
+runVisualization: false
+summaryCsv: "job_summary.csv"
