@@ -37,7 +37,7 @@ artObjective: "maximize"
 artThreshold: 0.2
 artAlpha: 0.25
 artNumRecommendations: 10
-artMaxMcmcCores: 24
+artMaxMcmcCores: 36
 artGenerateRecommendations: false
 artRunCrossValidation: true
 artNumTpotModels: 2

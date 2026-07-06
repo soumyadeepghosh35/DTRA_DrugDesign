@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import ast
 import csv
-import importlib
 import os
 import shutil
 import sys
@@ -145,119 +144,64 @@ def filterPathwaysTxtByExactSteps(jobName: str, exactSteps: int) -> dict[str, An
     }
 
 
-def buildJobackCalculator() -> Callable[[str], float | None]:
-    """SMILES -> Hf (kcal/mol) via the Joback group-contribution method (pip install thermo),
-    with a small literature-value lookup for inorganics Joback structurally can't fragment.
+_localCompoundCache = None
+_componentContribution = None
 
-    Joback is organic-only: it has no group definitions for bare H2O, NH3, H2, N2, CO, etc.
-    Those molecules show up as helpers in nearly every reaction, and inside DORAnet's own
-    Chem_Rxn_dH_Calculator, ONE unresolved Hf in a reaction makes the whole reaction's dH
-    NaN -- which Rxn_dH_Filter then rejects outright at generation time, not just in ranking.
-    Without this table, thermodynamics-on network generation collapses to near-zero reactions.
 
-    Values are gas-phase dfH (kcal/mol), sourced from NIST WebBook / CODATA unless noted.
-    H2 and N2 are zero by definition. Confidence is high for H2O/NH3/CO/H2S; lower for HNO3;
-    H2SO4/H2SO3 are left unresolved (None) since gas-phase data for those is too inconsistent
-    across sources to assert here -- verify directly against NIST WebBook if your network
-    leans on them and extend this table yourself.
+def _getEquilibrator(compoundsDbPath: str):
+    # Lazy, per-process singleton: ComponentContribution() takes 10-20s to load
+    # and must not be rebuilt per reaction. Each parallel worker (joblib/loky)
+    # builds its own once. Not verified end-to-end (Zenodo network access
+    # required) -- confirm with a real reaction before trusting a full run.
+    global _localCompoundCache, _componentContribution
+    if _componentContribution is None:
+        from equilibrator_api import ComponentContribution
+        from equilibrator_assets.local_compound_cache import LocalCompoundCache
+
+        _localCompoundCache = LocalCompoundCache()
+        dbFile = Path(compoundsDbPath)
+        if not dbFile.exists():
+            _localCompoundCache.generate_local_cache_from_default_zenodo(str(dbFile))
+        else:
+            _localCompoundCache.ccache = _localCompoundCache.ccache.__class__(str(dbFile))
+        _componentContribution = ComponentContribution(ccache=_localCompoundCache.ccache)
+    return _componentContribution, _localCompoundCache
+
+
+def buildRxnDg(compoundsDbPath: str) -> Callable[[dict], float | None]:
+    """Reaction-level standard dG' (kcal/mol) via eQuilibrator's component-contribution
+    method -- the approach DORAnet's own team uses for enzymatic reactions (their
+    official example notebook), and the physically appropriate metric for biochemical
+    reactions vs. enthalpy from group additivity. Already the dict -> float shape
+    enzymatic.generate_network's rxn_thermo_calculator requires, so unlike Joback/pathermo
+    this needs no per-molecule-to-reaction adapter. Returns None if any compound can't
+    be resolved/registered via SMILES, or the reaction isn't atomically balanced.
     """
-    from thermo.group_contribution.joback import Joback
+    from equilibrator_api import Reaction
 
-    knownHfKcalPerMol = {
-        "O": -57.80,             # H2O
-        "N": -11.02,             # NH3
-        "S": -4.93,              # H2S
-        "[H][H]": 0.00,          # H2, reference element
-        "N#N": 0.00,             # N2, reference element
-        "C=O": -25.95,           # CH2O (formaldehyde)
-        "[C-]#[O+]": -26.42,     # CO
-        "O=[N+]([O-])O": -32.10,  # HNO3, lower confidence
-        "O=S(=O)(O)O": None,     # H2SO4, gas-phase data too uncertain
-        "O=S(O)O": None,         # H2SO3, same caveat
-    }
-
-    def calculateHf(smiles: str) -> float | None:
-        mol = Chem.MolFromSmiles(smiles)
-        canon = Chem.MolToSmiles(mol) if mol else smiles
-        if canon in knownHfKcalPerMol:
-            return knownHfKcalPerMol[canon]
+    def rxnDg(rxn: dict) -> float | None:
         try:
-            j = Joback(smiles)
-            if j.status != "OK":
+            cc, lc = _getEquilibrator(compoundsDbPath)
+            allSmiles = list(rxn["reactants"]) + list(rxn["products"])
+            compounds = lc.get_compounds(allSmiles)
+            if any(c is None for c in compounds):
                 return None
-            return j.Hf(j.counts) / 4184
+            smilesToCompound = dict(zip(allSmiles, compounds))
+
+            stoich: dict[Any, int] = {}
+            for smi in rxn["reactants"]:
+                stoich[smilesToCompound[smi]] = stoich.get(smilesToCompound[smi], 0) - 1
+            for smi in rxn["products"]:
+                stoich[smilesToCompound[smi]] = stoich.get(smilesToCompound[smi], 0) + 1
+
+            reaction = Reaction(stoich)
+            if not reaction.is_balanced():
+                return None
+            return cc.standard_dg_prime(reaction).value.m_as("kJ/mol") / 4.184
         except Exception:
             return None
 
-    return calculateHf
-
-
-def buildPathermoCalculator() -> Callable[[str], float | None]:
-    """SMILES -> Hf (kcal/mol) using pathermo (Benson group additivity; pip install
-    git+https://github.com/dmdqy/pathermo.git or clone + `pip install -e .`), the
-    calculator actually used in the published DORAnet paper (Zhang et al., Digital
-    Discovery, 2025) -- including its 15 kcal/mol enthalpy threshold, which this
-    same paper confirms is the value the authors used, not an arbitrary default.
-
-    pathermo returns kcal/mol directly (no unit conversion needed) and ships with
-    a bundled small-molecule table that resolves H2O, NH3, H2S, H2, N2, O2, CO2,
-    HBr, Br2, etc. natively -- better helper-molecule coverage than Joback alone.
-
-    Falls back to Joback only when pathermo returns None, which happens for
-    structures its Benson group set has no value for -- notably fused polycyclic
-    heteroaromatics such as the purine scaffold (verified: pathermo can't resolve
-    a fused-ring carbon bonded to two ring nitrogens, a core feature of
-    adenine/guanine/hypoxanthine/xanthine chemistry). Joback's SMARTS-based
-    fragmentation handles those fine, so this fallback covers the gap.
-    """
-    from pathermo.properties import Hf as pathermoHf
-    from thermo.group_contribution.joback import Joback
-
-    def calculateHf(smiles: str) -> float | None:
-        hf = pathermoHf(smiles)
-        if hf is not None:
-            return hf
-        try:
-            j = Joback(smiles)
-            return j.Hf(j.counts) / 4184 if j.status == "OK" else None
-        except Exception:
-            return None
-
-    return calculateHf
-
-
-def loadThermoCalculator(config: dict[str, Any]) -> Callable[[str], float] | None:
-    """Resolve the SMILES -> Hf (kcal/mol) callable named by thermoCalculator:
-    pathermo/joback/pgthermo/custom/none."""
-    backend = str(config.get("thermoCalculator", "pathermo")).lower()
-    thermoRequired = bool(config.get("thermoRequired", True))
-
-    if backend == "none":
-        return None
-
-    try:
-        if backend == "pathermo":
-            return buildPathermoCalculator()
-        if backend == "joback":
-            return buildJobackCalculator()
-        if backend == "pgthermo":
-            from pgthermo.properties import Hf as pgthermoHf  # not verified installable; see "pathermo" instead
-
-            return lambda smiles: pgthermoHf(smiles) / 1000  # Hf returned in cal/mol
-        if backend == "custom":
-            if config.get("thermoCalculatorPath"):
-                sys.path.insert(0, str(Path(config["thermoCalculatorPath"]).expanduser().resolve()))
-            module = importlib.import_module(config["thermoCalculatorModule"])
-            calculator = getattr(module, config["thermoCalculatorFunction"])
-            if not callable(calculator):
-                raise TypeError(f"{config['thermoCalculatorModule']}.{config['thermoCalculatorFunction']} is not callable")
-            return calculator
-        raise ValueError(f"Unknown thermoCalculator backend: {backend!r}")
-    except Exception as exc:
-        if thermoRequired:
-            raise RuntimeError(f"Could not load thermoCalculator {backend!r}: {exc}") from exc
-        print(f"WARNING: thermoCalculator {backend!r} failed ({exc}); continuing with No_Thermo.")
-        return None
+    return rxnDg
 
 
 def maybeRunPostProcessing(
@@ -268,7 +212,6 @@ def maybeRunPostProcessing(
     helpers: set[str],
     config: dict[str, Any],
     generationRun: int,
-    thermoCalculator: Callable[[str], float] | None,
 ) -> dict[str, Any]:
     """Run DORAnet post-processing (pretreat -> find pathways -> rank/visualize) for userTarget."""
     import doranet.modules.post_processing as postProcessing
@@ -280,8 +223,10 @@ def maybeRunPostProcessing(
     runVisualization = bool(config.get("runVisualization", False))
     numProcess = int(config.get("numProcess", 1))
 
-    # dH per reaction is already set during generate_network(); the calculator here
-    # only feeds the optional keto-enol correction when transformEnolsFlag is True.
+    # dH/dG per reaction is already set during generate_network(); no per-molecule
+    # calculator here since eQuilibrator's dG is reaction-level only. This only
+    # ever fed the (off-by-default) enol-transform correction, a no-op either way
+    # unless you've set transformEnolsFlag elsewhere.
     postProcessing.pretreat_networks(
         networks={network},
         total_generations=generationRun,
@@ -291,7 +236,7 @@ def maybeRunPostProcessing(
         remove_pure_helpers_rxns=bool(config.get("removePureHelpersRxns", False)),
         sanitize=bool(config.get("sanitize", True)),
         transform_enols_flag=bool(config.get("transformEnolsFlag", False)),
-        molecule_thermo_calculator=thermoCalculator,
+        molecule_thermo_calculator=None,
     )
 
     postProcessing.pathway_finder(
@@ -352,12 +297,9 @@ def saveReproScript(jobDir: Path, config: dict[str, Any], jobName: str, targetSm
     maxNumRxns = generationRun if config.get("maxNumRxnsEqualsGeneration", True) else int(config.get("maxNumRxns", generationRun))
     exactNumRxns = generationRun if config.get("exactNumRxnsEqualsGeneration", True) else int(config.get("exactNumRxns", generationRun))
 
-    thermoBackend = str(config.get("thermoCalculator", "joback")).lower()
-    thermoCalculatorModule = config.get("thermoCalculatorModule", "")
-    thermoCalculatorFunction = config.get("thermoCalculatorFunction", "")
-    thermoCalculatorPath = str(Path(config["thermoCalculatorPath"]).expanduser().resolve()) if config.get("thermoCalculatorPath") else ""
-    thermoRequired = bool(config.get("thermoRequired", True))
-    maxRxnThermoChange = float(config.get("maxRxnThermoChange", 15))
+    filterByThermodynamics = bool(config.get("filterByThermodynamics", False))
+    maxRxnThermoChange = float(config.get("maxRxnThermoChange", 0))
+    compoundsDbPath = config.get("compoundsDbPath", "compounds.sqlite")
     transformEnolsFlag = bool(config.get("transformEnolsFlag", False))
 
     scriptText = f'''\
@@ -391,12 +333,9 @@ exactNumRxns = {exactNumRxns}
 runRanking = {bool(config.get('runRanking', True))}
 runVisualization = {bool(config.get('runVisualization', False))}
 
-thermoBackend = "{thermoBackend}"
-thermoCalculatorModule = "{thermoCalculatorModule}"
-thermoCalculatorFunction = "{thermoCalculatorFunction}"
-thermoCalculatorPath = "{thermoCalculatorPath}"
-thermoRequired = {thermoRequired}
-maxRxnThermoChange = {maxRxnThermoChange}
+filterByThermodynamics = {filterByThermodynamics}
+maxRxnThermoChange = float("{maxRxnThermoChange}")
+compoundsDbPath = "{compoundsDbPath}"
 transformEnolsFlag = {transformEnolsFlag}
 
 
@@ -451,77 +390,53 @@ def filterPathwaysTxtByExactSteps(jobName, exactSteps):
     return len(blocks), len(exactBlocks)
 
 
-def buildJobackCalculator():
-    from thermo.group_contribution.joback import Joback
+_componentContribution = None
+_localCompoundCache = None
 
-    knownHfKcalPerMol = {{
-        "O": -57.80, "N": -11.02, "S": -4.93, "[H][H]": 0.00, "N#N": 0.00,
-        "C=O": -25.95, "[C-]#[O+]": -26.42, "O=[N+]([O-])O": -32.10,
-        "O=S(=O)(O)O": None, "O=S(O)O": None,
-    }}
 
-    def calculateHf(smiles):
-        mol = Chem.MolFromSmiles(smiles)
-        canon = Chem.MolToSmiles(mol) if mol else smiles
-        if canon in knownHfKcalPerMol:
-            return knownHfKcalPerMol[canon]
+def getEquilibrator(compoundsDbPath):
+    global _componentContribution, _localCompoundCache
+    if _componentContribution is None:
+        from equilibrator_api import ComponentContribution
+        from equilibrator_assets.local_compound_cache import LocalCompoundCache
+
+        _localCompoundCache = LocalCompoundCache()
+        dbFile = Path(compoundsDbPath)
+        if not dbFile.exists():
+            _localCompoundCache.generate_local_cache_from_default_zenodo(str(dbFile))
+        else:
+            _localCompoundCache.ccache = _localCompoundCache.ccache.__class__(str(dbFile))
+        _componentContribution = ComponentContribution(ccache=_localCompoundCache.ccache)
+    return _componentContribution, _localCompoundCache
+
+
+def buildRxnDg(compoundsDbPath):
+    from equilibrator_api import Reaction
+
+    def rxnDg(rxn):
         try:
-            j = Joback(smiles)
-            if j.status != "OK":
+            cc, lc = getEquilibrator(compoundsDbPath)
+            allSmiles = list(rxn["reactants"]) + list(rxn["products"])
+            compounds = lc.get_compounds(allSmiles)
+            if any(c is None for c in compounds):
                 return None
-            return j.Hf(j.counts) / 4184
+            smilesToCompound = dict(zip(allSmiles, compounds))
+            stoich = {{}}
+            for smi in rxn["reactants"]:
+                stoich[smilesToCompound[smi]] = stoich.get(smilesToCompound[smi], 0) - 1
+            for smi in rxn["products"]:
+                stoich[smilesToCompound[smi]] = stoich.get(smilesToCompound[smi], 0) + 1
+            reaction = Reaction(stoich)
+            if not reaction.is_balanced():
+                return None
+            return cc.standard_dg_prime(reaction).value.m_as("kJ/mol") / 4.184
         except Exception:
             return None
 
-    return calculateHf
+    return rxnDg
 
 
-def buildPathermoCalculator():
-    from pathermo.properties import Hf as pathermoHf
-    from thermo.group_contribution.joback import Joback
-
-    def calculateHf(smiles):
-        hf = pathermoHf(smiles)
-        if hf is not None:
-            return hf
-        try:
-            j = Joback(smiles)
-            return j.Hf(j.counts) / 4184 if j.status == "OK" else None
-        except Exception:
-            return None
-
-    return calculateHf
-
-
-def loadThermoCalculator() -> Callable[[str], float] | None:
-    if thermoBackend == "none":
-        return None
-    try:
-        if thermoBackend == "pathermo":
-            return buildPathermoCalculator()
-        if thermoBackend == "joback":
-            return buildJobackCalculator()
-        if thermoBackend == "pgthermo":
-            from pgthermo.properties import Hf as pgthermoHf
-
-            return lambda smiles: pgthermoHf(smiles) / 1000
-        if thermoBackend == "custom":
-            if thermoCalculatorPath:
-                sys.path.insert(0, thermoCalculatorPath)
-            module = importlib.import_module(thermoCalculatorModule)
-            calculator = getattr(module, thermoCalculatorFunction)
-            if not callable(calculator):
-                raise TypeError(f"{{thermoCalculatorModule}}.{{thermoCalculatorFunction}} is not callable")
-            return calculator
-        raise ValueError(f"Unknown thermoCalculator backend: {{thermoBackend!r}}")
-    except Exception as exc:
-        if thermoRequired:
-            raise RuntimeError(f"Could not load thermoCalculator {{thermoBackend!r}}: {{exc}}") from exc
-        print(f"WARNING: thermoCalculator {{thermoBackend!r}} failed ({{exc}}); continuing with No_Thermo.")
-        return None
-
-
-thermoCalculator = loadThermoCalculator()
+rxnDgCalculator = buildRxnDg(compoundsDbPath) if filterByThermodynamics else None
 
 t0 = time.time()
 network = enzymatic.generate_network(
@@ -532,7 +447,7 @@ network = enzymatic.generate_network(
     direction="{config.get('direction', 'forward')}",
     targets=target,
     ruleset=ruleset,
-    rxn_thermo_calculator=thermoCalculator,
+    rxn_thermo_calculator=rxnDgCalculator,
     max_rxn_thermo_change=maxRxnThermoChange,
 )
 
@@ -551,7 +466,7 @@ postProcessing.pretreat_networks(
     helpers=helpers,
     job_name=jobName,
     transform_enols_flag=transformEnolsFlag,
-    molecule_thermo_calculator=thermoCalculator,
+    molecule_thermo_calculator=None,
 )
 postProcessing.pathway_finder(
     starters=starters,
@@ -597,8 +512,18 @@ def runOneJob(targetIndex: int, targetSmiles: str, generationRun: int, config: d
         userTarget = {targetSmiles}
 
         # Built per-worker process rather than passed in, since this runs under joblib/loky.
-        thermoCalculator = loadThermoCalculator(config)
-        maxRxnThermoChange = float(config.get("maxRxnThermoChange", 15))
+        # When filtering is off, skip the calculator entirely rather than just raising the
+        # threshold: Rxn_dH_Filter rejects NaN dH regardless of max_dH (NaN < anything is
+        # always False in Python), so any reaction touching a compound eQuilibrator can't
+        # resolve/register gets killed no matter how permissive the threshold is. Only
+        # rxn_thermo_calculator=None makes every reaction "No_Thermo" and always pass.
+        filterByThermodynamics = bool(config.get("filterByThermodynamics", False))
+        # 0, not 15: DORAnet's own enzymatic example keeps a reaction only if it's
+        # exergonic as written (dG' < this value) -- a different quantity and cutoff
+        # than an enthalpy-based threshold.
+        maxRxnThermoChange = float(config.get("maxRxnThermoChange", 0))
+        compoundsDbPath = config.get("compoundsDbPath", "compounds.sqlite")
+        rxnDgCalculator = buildRxnDg(compoundsDbPath) if filterByThermodynamics else None
 
         network = enzymatic.generate_network(
             job_name=jobName,
@@ -608,7 +533,7 @@ def runOneJob(targetIndex: int, targetSmiles: str, generationRun: int, config: d
             direction=config.get("direction", "forward"),
             targets=userTarget,
             ruleset=config["ruleset"],
-            rxn_thermo_calculator=thermoCalculator,
+            rxn_thermo_calculator=rxnDgCalculator,
             max_rxn_thermo_change=maxRxnThermoChange,
         )
 
@@ -623,7 +548,7 @@ def runOneJob(targetIndex: int, targetSmiles: str, generationRun: int, config: d
         targetCanonical = canonicalSmiles(targetSmiles)
         targetInGeneratedMolecules = targetCanonical in {canonicalSmiles(s) for s in smilesList} if targetCanonical else False
 
-        postInfo = maybeRunPostProcessing(network, jobName, userTarget, starters, helpers, config, generationRun, thermoCalculator)
+        postInfo = maybeRunPostProcessing(network, jobName, userTarget, starters, helpers, config, generationRun)
 
         return {
             "jobName": jobName,
@@ -634,8 +559,7 @@ def runOneJob(targetIndex: int, targetSmiles: str, generationRun: int, config: d
             "generationRun": generationRun,
             "targetInGeneratedMolecules": targetInGeneratedMolecules,
             "numMolecules": len(smilesList),
-            "thermoCalculatorBackend": str(config.get("thermoCalculator", "joback")).lower(),
-            "thermoCalculatorActive": thermoCalculator is not None,
+            "filterByThermodynamics": filterByThermodynamics,
             "maxRxnThermoChange": maxRxnThermoChange,
             "seconds": round(time.time() - startTime, 2),
             "status": "ok",
@@ -667,13 +591,12 @@ def validateConfig(config: dict[str, Any]) -> None:
     if not resolveGenerationRuns(config):
         raise ValueError("No generations to run. Set generationsToRun, e.g. [1, 2, 3].")
 
-    backend = str(config.get("thermoCalculator", "joback")).lower()
-    if backend == "custom" and not (config.get("thermoCalculatorModule") and config.get("thermoCalculatorFunction")):
-        raise ValueError("thermoCalculator is 'custom' but thermoCalculatorModule/thermoCalculatorFunction aren't both set.")
-
-    # Fail before dispatching any parallel jobs if the calculator can't load.
-    if bool(config.get("thermoRequired", True)) and backend != "none":
-        loadThermoCalculator(config)
+    filterByThermodynamics = bool(config.get("filterByThermodynamics", False))
+    # Fail before dispatching any parallel jobs if eQuilibrator can't initialize
+    # (e.g. compoundsDbPath missing and Zenodo unreachable) -- cheaper to find out
+    # now than after N jobs each hit the same error.
+    if filterByThermodynamics:
+        _getEquilibrator(config.get("compoundsDbPath", "compounds.sqlite"))
 
 
 def main() -> None:
@@ -709,7 +632,9 @@ def main() -> None:
     print(f"Config: {configPath} | Output dir: {outputDir}")
     print(f"Targets: {len(targets)} loaded, {len(selectedTargets)} selected | Generations: {generations}")
     print(f"Total jobs: {len(workItems)} with nJobs={config['numParallelJobs']}")
-    print(f"Thermo backend: {str(config.get('thermoCalculator', 'joback')).lower()} | max dH cutoff: {config.get('maxRxnThermoChange', 15)} kcal/mol")
+    filterByThermodynamics = bool(config.get("filterByThermodynamics", False))
+    thermoStatus = f"ON (eQuilibrator dG', cutoff {config.get('maxRxnThermoChange', 0)} kcal/mol)" if filterByThermodynamics else "OFF (No_Thermo, unfiltered)"
+    print(f"Thermo filtering: {thermoStatus}")
 
     results = Parallel(n_jobs=int(config["numParallelJobs"]), backend="loky", verbose=10)(
         delayed(runOneJob)(targetIndex, targetSmiles, generationRun, config, outputDir)

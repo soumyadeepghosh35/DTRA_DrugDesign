@@ -23,6 +23,40 @@ targetsColumn: "Canonical_SMILES"
 # Network generation.
 starters:
   - "C1=NC2=C(C(=O)N1)N=CN2[C@H]3[C@@H]([C@@H]([C@H](O3)CO)O)O"
+
+maxAtoms:
+  C: 15
+  N: 6
+  O: 8
+  S: 3
+direction: "forward"
+ruleset: "JN3604IMT"
+
+# Reaction thermodynamics via eQuilibrator's standard Gibbs free energy (dG'),
+# the approach DORAnet's own team uses for enzymatic reactions (their official
+# example notebook), and the physically appropriate metric for biochemical
+# reactions -- not enthalpy from group additivity. When false (default), no
+# calculator is built at all and nothing is rejected on thermodynamic grounds;
+# this is the safer default since a calculator that can't resolve some
+# compound still kills that whole reaction regardless of the cutoff.
+filterByThermodynamics: false
+
+# 0, not 15: keep a reaction only if it's exergonic as written (dG' < this).
+maxRxnThermoChange: 0
+
+# Path to the local eQuilibrator compound cache (built once via
+# generate_local_cache_from_default_zenodo). If missing, the script tries to
+# build it on first use -- slow, needs Zenodo access, better done yourself
+# ahead of time, especially on compute nodes with restricted internet access.
+compoundsDbPath: "compounds.sqlite"
+
+# Pathway search. minRxnAtomEconomy 0.0 for debugging; try 0.3 once pathways exist.
+minRxnAtomEconomy: 0.0
+runRanking: true
+runVisualization: false
+summaryCsv: "job_summary.csv"
+
+
 helpers:
   - "C#N"
   - "N"
@@ -45,26 +79,3 @@ helpers:
   - "O=C=O"
   - "[C-]#[O+]"
   - "C=C"
-maxAtoms:
-  C: 15
-  N: 6
-  O: 8
-  S: 3
-direction: "forward"
-ruleset: "JN3604IMT"
-
-# Reaction thermodynamics. "pathermo" is the Benson group-additivity calculator the
-# published DORAnet paper actually used (github.com/dmdqy/pathermo), with Joback
-# (pip install thermo) as an automatic fallback for molecules pathermo's Benson
-# group set can't resolve -- notably fused polycyclic heteroaromatics like the
-# purine scaffold in your starter molecule. No action needed: the fallback is
-# built into the "pathermo" backend itself.
-thermoCalculator: "pathermo"
-maxRxnThermoChange: 15
-thermoRequired: true
-
-# Pathway search. minRxnAtomEconomy 0.0 for debugging; try 0.3 once pathways exist.
-minRxnAtomEconomy: 0.0
-runRanking: true
-runVisualization: false
-summaryCsv: "job_summary.csv"

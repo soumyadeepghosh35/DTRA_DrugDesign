@@ -15,7 +15,7 @@ import doranet.modules.post_processing as postProcessing
 
 jobName = "high_pPotency_molecule_pathway17_wGen3"
 starters = {'C1=NC2=C(C(=O)N1)N=CN2[C@H]3[C@@H]([C@@H]([C@H](O3)CO)O)O'}
-helpers = {'O=[N+]([O-])O', 'O=S=O', '[Br][Br]', 'N#N', '[H][H]', 'C#N', 'C=O', 'O', 'C=C', 'Br', 'N', 'O=S(O)O', 'N#CO', 'O=O', 'O=NO', 'NO', 'CO', '[C-]#[O+]', 'O=S(=O)(O)O', 'O=C=O', 'S'}
+helpers = {'O=S(=O)(O)O', 'CO', 'O=S(O)O', 'Br', 'S', 'C#N', 'N#N', 'O=C=O', 'N#CO', '[C-]#[O+]', 'O=S=O', 'C=C', 'N', 'O=[N+]([O-])O', '[H][H]', 'O', 'O=NO', 'C=O', 'O=O', '[Br][Br]', 'NO'}
 target = {"O=CNc1ncnc2c1ncn2[C@@H]1O[C@H](C=O)[C@@H](O)[C@H]1O"}
 maxAtoms = {'C': 15, 'N': 6, 'O': 8, 'S': 3}
 generations = 3
@@ -28,12 +28,9 @@ exactNumRxns = 3
 runRanking = True
 runVisualization = False
 
-thermoBackend = "pathermo"
-thermoCalculatorModule = ""
-thermoCalculatorFunction = ""
-thermoCalculatorPath = ""
-thermoRequired = True
-maxRxnThermoChange = 15.0
+filterByThermodynamics = False
+maxRxnThermoChange = float("0.0")
+compoundsDbPath = "compounds.sqlite"
 transformEnolsFlag = False
 
 
@@ -88,77 +85,53 @@ def filterPathwaysTxtByExactSteps(jobName, exactSteps):
     return len(blocks), len(exactBlocks)
 
 
-def buildJobackCalculator():
-    from thermo.group_contribution.joback import Joback
+_componentContribution = None
+_localCompoundCache = None
 
-    knownHfKcalPerMol = {
-        "O": -57.80, "N": -11.02, "S": -4.93, "[H][H]": 0.00, "N#N": 0.00,
-        "C=O": -25.95, "[C-]#[O+]": -26.42, "O=[N+]([O-])O": -32.10,
-        "O=S(=O)(O)O": None, "O=S(O)O": None,
-    }
 
-    def calculateHf(smiles):
-        mol = Chem.MolFromSmiles(smiles)
-        canon = Chem.MolToSmiles(mol) if mol else smiles
-        if canon in knownHfKcalPerMol:
-            return knownHfKcalPerMol[canon]
+def getEquilibrator(compoundsDbPath):
+    global _componentContribution, _localCompoundCache
+    if _componentContribution is None:
+        from equilibrator_api import ComponentContribution
+        from equilibrator_assets.local_compound_cache import LocalCompoundCache
+
+        _localCompoundCache = LocalCompoundCache()
+        dbFile = Path(compoundsDbPath)
+        if not dbFile.exists():
+            _localCompoundCache.generate_local_cache_from_default_zenodo(str(dbFile))
+        else:
+            _localCompoundCache.ccache = _localCompoundCache.ccache.__class__(str(dbFile))
+        _componentContribution = ComponentContribution(ccache=_localCompoundCache.ccache)
+    return _componentContribution, _localCompoundCache
+
+
+def buildRxnDg(compoundsDbPath):
+    from equilibrator_api import Reaction
+
+    def rxnDg(rxn):
         try:
-            j = Joback(smiles)
-            if j.status != "OK":
+            cc, lc = getEquilibrator(compoundsDbPath)
+            allSmiles = list(rxn["reactants"]) + list(rxn["products"])
+            compounds = lc.get_compounds(allSmiles)
+            if any(c is None for c in compounds):
                 return None
-            return j.Hf(j.counts) / 4184
+            smilesToCompound = dict(zip(allSmiles, compounds))
+            stoich = {}
+            for smi in rxn["reactants"]:
+                stoich[smilesToCompound[smi]] = stoich.get(smilesToCompound[smi], 0) - 1
+            for smi in rxn["products"]:
+                stoich[smilesToCompound[smi]] = stoich.get(smilesToCompound[smi], 0) + 1
+            reaction = Reaction(stoich)
+            if not reaction.is_balanced():
+                return None
+            return cc.standard_dg_prime(reaction).value.m_as("kJ/mol") / 4.184
         except Exception:
             return None
 
-    return calculateHf
+    return rxnDg
 
 
-def buildPathermoCalculator():
-    from pathermo.properties import Hf as pathermoHf
-    from thermo.group_contribution.joback import Joback
-
-    def calculateHf(smiles):
-        hf = pathermoHf(smiles)
-        if hf is not None:
-            return hf
-        try:
-            j = Joback(smiles)
-            return j.Hf(j.counts) / 4184 if j.status == "OK" else None
-        except Exception:
-            return None
-
-    return calculateHf
-
-
-def loadThermoCalculator() -> Callable[[str], float] | None:
-    if thermoBackend == "none":
-        return None
-    try:
-        if thermoBackend == "pathermo":
-            return buildPathermoCalculator()
-        if thermoBackend == "joback":
-            return buildJobackCalculator()
-        if thermoBackend == "pgthermo":
-            from pgthermo.properties import Hf as pgthermoHf
-
-            return lambda smiles: pgthermoHf(smiles) / 1000
-        if thermoBackend == "custom":
-            if thermoCalculatorPath:
-                sys.path.insert(0, thermoCalculatorPath)
-            module = importlib.import_module(thermoCalculatorModule)
-            calculator = getattr(module, thermoCalculatorFunction)
-            if not callable(calculator):
-                raise TypeError(f"{thermoCalculatorModule}.{thermoCalculatorFunction} is not callable")
-            return calculator
-        raise ValueError(f"Unknown thermoCalculator backend: {thermoBackend!r}")
-    except Exception as exc:
-        if thermoRequired:
-            raise RuntimeError(f"Could not load thermoCalculator {thermoBackend!r}: {exc}") from exc
-        print(f"WARNING: thermoCalculator {thermoBackend!r} failed ({exc}); continuing with No_Thermo.")
-        return None
-
-
-thermoCalculator = loadThermoCalculator()
+rxnDgCalculator = buildRxnDg(compoundsDbPath) if filterByThermodynamics else None
 
 t0 = time.time()
 network = enzymatic.generate_network(
@@ -169,7 +142,7 @@ network = enzymatic.generate_network(
     direction="forward",
     targets=target,
     ruleset=ruleset,
-    rxn_thermo_calculator=thermoCalculator,
+    rxn_thermo_calculator=rxnDgCalculator,
     max_rxn_thermo_change=maxRxnThermoChange,
 )
 
@@ -188,7 +161,7 @@ postProcessing.pretreat_networks(
     helpers=helpers,
     job_name=jobName,
     transform_enols_flag=transformEnolsFlag,
-    molecule_thermo_calculator=thermoCalculator,
+    molecule_thermo_calculator=None,
 )
 postProcessing.pathway_finder(
     starters=starters,
