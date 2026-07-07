@@ -2,19 +2,19 @@
 # run as (inside art environment): python runART.py art_config.yaml > art.out
 
 # Input data
-baseDataDir: "../../"
-modelBuildingDataSubdir: "."
+baseDataDir: ".."
+modelBuildingDataSubdir: ".."
 
 # Output folder
 outputDir: "ART_results"
 
 # Job label
-jobName: "combinedEbolaVirusData_allDB"
+jobName: "BacillusAnthracisData_allDB"
 
 # Default file names
-trainingCsvSuffix: "_wchemberta_ARTready.csv"
-artReadyCsvSuffix: "_wchemberta_ARTready.csv"
-artModelFileName: "art_wchemberta.cpkl"
+trainingCsvSuffix: "_wmist_ARTready.csv"
+artReadyCsvSuffix: "_wmist_ARTready.csv"
+artModelFileName: "art_mist.cpkl"
 
 # Optional path overrides
 # Use these if your ART-ready CSV filename does not match jobName + artReadyCsvSuffix
@@ -37,7 +37,7 @@ artObjective: "maximize"
 artThreshold: 0.2
 artAlpha: 0.25
 artNumRecommendations: 10
-artMaxMcmcCores: 18
+artMaxMcmcCores: 36
 artGenerateRecommendations: false
 artRunCrossValidation: true
 artNumTpotModels: 2
