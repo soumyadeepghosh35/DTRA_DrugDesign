@@ -28,4 +28,8 @@ echo "Downloading MoLFormer XL..."
 hf download ibm-research/MoLFormer-XL-both-10pct \
   --local-dir ./MoLFormer_XL_both_10pct
 
+echo "Downloading MIST-28M base model..."
+hf download mist-models/mist-28M-ti624ev1 \
+  --local-dir ./MIST_28M
+
 echo "All models downloaded successfully."
