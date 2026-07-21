@@ -1,38 +1,34 @@
 #!/usr/bin/env python3
-import ast, csv, importlib, os, shutil, sys, time
+import ast, csv, os, shutil, sys, time
 from pathlib import Path
-from typing import Callable
-
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
-for var in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
-    os.environ[var] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
-sys.path.insert(0, r"/users/sghosh6/DTRA_project/MACAW/doranet")
+doranetPath = Path(r"/users/sghosh6/DTRA_project/MACAW/doranet")
+sys.path.insert(0, str(doranetPath))
+
 import doranet.modules.enzymatic as enzymatic
 import doranet.modules.post_processing as postProcessing
 
-jobName = "high_pPotency_molecule_pathway11_wGen2"
-starters = {'C1=NC2=C(C(=O)N1)N=CN2[C@H]3[C@@H]([C@@H]([C@H](O3)CO)O)O'}
-helpers = {'O=S=O', 'N#CO', 'O=NO', 'O=O', 'N', 'Br', 'NO', '[H][H]', 'O', 'O=S(O)O', '[C-]#[O+]', 'N#N', 'C#N', 'O=C=O', 'C=C', 'O=S(=O)(O)O', 'CO', 'O=[N+]([O-])O', 'S', '[Br][Br]', 'C=O'}
-target = {"C[C@H]1O[C@@H](n2cnc3c(=O)[nH]c(NC=O)nc32)[C@H](O)[C@@H]1O"}
-maxAtoms = {'C': 15, 'N': 6, 'O': 8, 'S': 3}
-generations = 2
-ruleset = "JN3604IMT"
-searchDepth = 2
-maxNumRxns = 2
-minRxnAtomEconomy = 0.0
-filterExactNumRxns = True
-exactNumRxns = 2
-runRanking = True
-runVisualization = False
-
-filterByThermodynamics = False
-maxRxnThermoChange = float("0.0")
-compoundsDbPath = "compounds.sqlite"
-transformEnolsFlag = False
-
+jobName      = "high_pPotency_molecule_pathway11_wGen2"
+starters     = {'Nc1nc2c(ncn2[C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]1'}
+helpers      = {'Br', '[Br][Br]', '[H][H]', 'O=NO', 'N#N', 'C=O', 'C#N', 'S', 'O=S=O', 'O=S(=O)(O)O', 'N', 'NO', 'N#CO', 'O', '[C-]#[O+]', 'O=[N+]([O-])O', 'O=S(O)O', 'O=O', 'C=C', 'O=C=O', 'CO'}
+target       = {'CC(O)[C@H]1O[C@@H](n2cnc3c(=O)[nH]c(NC=O)nc32)[C@H](O)[C@@H]1O'}
+maxAtoms     = {'C': 15, 'N': 8, 'O': 8, 'S': 1}
+generations  = 2
+ruleset      = "JN3604IMT"
+searchDepth  = 2
+maxNumRxns   = 2
+minRxnAtomEconomy   = 0.0
+filterExactNumRxns  = True
+exactNumRxns        = 2
+runRanking          = True
+runVisualization    = False
 
 def getSmilesProps(smiles):
     mol = Chem.MolFromSmiles(smiles)
@@ -40,24 +36,12 @@ def getSmilesProps(smiles):
         return "N/A", 0.0, 0
     return rdMolDescriptors.CalcMolFormula(mol), round(rdMolDescriptors.CalcExactMolWt(mol), 4), mol.GetNumHeavyAtoms()
 
-
-def countPathwayBlockSteps(blockLines):
-    prefix = "reaction SMILES stoichiometry "
-    for line in blockLines:
-        if line.startswith(prefix):
-            try:
-                parsed = ast.literal_eval(line[len(prefix):].strip())
-                return len(parsed) if isinstance(parsed, list) else None
-            except Exception:
-                return None
-    return None
-
-
-def splitPathwayBlocks(pathwaysTxtPath):
-    if not pathwaysTxtPath.exists():
+def splitPathwayBlocks(p):
+    if not p.exists():
         return []
+    lines = p.read_text(encoding="utf-8").splitlines()
     blocks, current = [], []
-    for line in pathwaysTxtPath.read_text(encoding="utf-8").splitlines():
+    for line in lines:
         if line.startswith("pathway number ") and current:
             blocks.append(current)
             current = [line]
@@ -67,114 +51,45 @@ def splitPathwayBlocks(pathwaysTxtPath):
         blocks.append(current)
     return blocks
 
-
-def filterPathwaysTxtByExactSteps(jobName, exactSteps):
-    pathwaysPath = Path(f"{jobName}_pathways.txt")
-    backupPath = Path(f"{jobName}_pathways_unfiltered.txt")
-    exactPath = Path(f"{jobName}_pathways_exact{exactSteps}.txt")
-    if not pathwaysPath.exists():
-        return 0, 0
-    blocks = splitPathwayBlocks(pathwaysPath)
-    exactBlocks = [b for b in blocks if countPathwayBlockSteps(b) == exactSteps]
-    if not backupPath.exists():
-        shutil.copy2(pathwaysPath, backupPath)
-    exactText = "\n\n".join("\n".join(block) for block in exactBlocks)
-    exactText = exactText + "\n" if exactText else exactText
-    exactPath.write_text(exactText, encoding="utf-8")
-    pathwaysPath.write_text(exactText, encoding="utf-8")
-    return len(blocks), len(exactBlocks)
-
-
-_componentContribution = None
-_localCompoundCache = None
-
-
-def getEquilibrator(compoundsDbPath):
-    global _componentContribution, _localCompoundCache
-    if _componentContribution is None:
-        from equilibrator_api import ComponentContribution
-        from equilibrator_assets.local_compound_cache import LocalCompoundCache
-
-        _localCompoundCache = LocalCompoundCache()
-        dbFile = Path(compoundsDbPath)
-        if not dbFile.exists():
-            _localCompoundCache.generate_local_cache_from_default_zenodo(str(dbFile))
-        else:
-            _localCompoundCache.ccache = _localCompoundCache.ccache.__class__(str(dbFile))
-        _componentContribution = ComponentContribution(ccache=_localCompoundCache.ccache)
-    return _componentContribution, _localCompoundCache
-
-
-def buildRxnDg(compoundsDbPath):
-    from equilibrator_api import Reaction
-
-    def rxnDg(rxn):
-        try:
-            cc, lc = getEquilibrator(compoundsDbPath)
-            allSmiles = list(rxn["reactants"]) + list(rxn["products"])
-            compounds = lc.get_compounds(allSmiles)
-            if any(c is None for c in compounds):
+def countSteps(block):
+    import ast
+    prefix = "reaction SMILES stoichiometry "
+    for line in block:
+        if line.startswith(prefix):
+            try:
+                parsed = ast.literal_eval(line[len(prefix):].strip())
+                return len(parsed) if isinstance(parsed, list) else None
+            except Exception:
                 return None
-            smilesToCompound = dict(zip(allSmiles, compounds))
-            stoich = {}
-            for smi in rxn["reactants"]:
-                stoich[smilesToCompound[smi]] = stoich.get(smilesToCompound[smi], 0) - 1
-            for smi in rxn["products"]:
-                stoich[smilesToCompound[smi]] = stoich.get(smilesToCompound[smi], 0) + 1
-            reaction = Reaction(stoich)
-            if not reaction.is_balanced():
-                return None
-            return cc.standard_dg_prime(reaction).value.m_as("kJ/mol") / 4.184
-        except Exception:
-            return None
-
-    return rxnDg
-
-
-rxnDgCalculator = buildRxnDg(compoundsDbPath) if filterByThermodynamics else None
+    return None
 
 t0 = time.time()
 network = enzymatic.generate_network(
-    job_name=jobName,
-    starters=starters,
-    gen=generations,
-    max_atoms=maxAtoms,
-    direction="forward",
-    targets=target,
-    ruleset=ruleset,
-    rxn_thermo_calculator=rxnDgCalculator,
-    max_rxn_thermo_change=maxRxnThermoChange,
+    job_name=jobName, starters=starters, gen=generations, max_atoms=maxAtoms,
+    direction="forward", targets=target, ruleset=ruleset,
 )
 
 smilesList = list(starters) + [m.uid for m in network.mols if m.uid not in starters]
 with Path(f"{jobName}_molecules.csv").open("w", newline="") as f:
-    writer = csv.writer(f)
-    writer.writerow(["SMILES", "isStarter", "molFormula", "molWeight", "numHeavyAtoms"])
+    w = csv.writer(f)
+    w.writerow(["SMILES", "isStarter", "molFormula", "molWeight", "numHeavyAtoms"])
     for s in smilesList:
-        formula, weight, heavyAtoms = getSmilesProps(s)
-        writer.writerow([s, s in starters, formula, weight, heavyAtoms])
+        w.writerow([s, s in starters, *getSmilesProps(s)])
 
-postProcessing.pretreat_networks(
-    networks={network},
-    total_generations=generations,
-    starters=starters,
-    helpers=helpers,
-    job_name=jobName,
-    transform_enols_flag=transformEnolsFlag,
-    molecule_thermo_calculator=None,
-)
-postProcessing.pathway_finder(
-    starters=starters,
-    helpers=helpers,
-    target=target,
-    search_depth=searchDepth,
-    max_num_rxns=maxNumRxns,
-    min_rxn_atom_economy=minRxnAtomEconomy,
-    job_name=jobName,
-)
+postProcessing.pretreat_networks(networks={network}, total_generations=generations, starters=starters, helpers=helpers, job_name=jobName)
+postProcessing.pathway_finder(starters=starters, helpers=helpers, target=target, search_depth=searchDepth, max_num_rxns=maxNumRxns, min_rxn_atom_economy=minRxnAtomEconomy, job_name=jobName)
+
 if filterExactNumRxns:
-    original, exact = filterPathwaysTxtByExactSteps(jobName, exactNumRxns)
-    print(f"Exact-step filter Gen{generations}: {exact}/{original} pathways retained")
+    pPath = Path(f"{jobName}_pathways.txt")
+    ePath  = Path(f"{jobName}_pathways_exact{exactNumRxns}.txt")
+    if pPath.exists():
+        blocks = splitPathwayBlocks(pPath)
+        exact  = [b for b in blocks if countSteps(b) == exactNumRxns]
+        txt    = "\n\n".join("\n".join(b) for b in exact)
+        ePath.write_text(txt + "\n" if txt else "", encoding="utf-8")
+        pPath.write_text(txt + "\n" if txt else "", encoding="utf-8")
+        print(f"Exact-step filter Gen{generations}: {len(exact)}/{len(blocks)} pathways retained")
+
 if runRanking:
     postProcessing.pathway_ranking(starters=starters, helpers=helpers, target=target, job_name=jobName, num_process=1)
 if runVisualization:

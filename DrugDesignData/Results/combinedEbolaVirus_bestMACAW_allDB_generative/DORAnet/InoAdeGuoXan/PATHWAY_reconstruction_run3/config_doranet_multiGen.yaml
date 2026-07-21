@@ -1,61 +1,36 @@
 # DORAnet targeted multi-generation pathway generation config
-# Run: python doranet_pathways_multiGen.py config_doranet_multiGen.yaml
+# Usage: python doranet_pathways_multiGen.py config_doranet_multiGen.yaml
 
 doranetPath: "/users/sghosh6/DTRA_project/MACAW/doranet"
 outputDir: "."
+
 baseJobPrefix: "high_pPotency_molecule_pathway"
 generationSuffixTemplate: "_wGen{generation}"
-numParallelJobs: 8
 
-# Generation depths to run separately, each as its own job.
+# Generation depths to run separately. Each N produces exactly N-step pathways.
 generationsToRun: [1, 2, 3]
 searchDepthEqualsGeneration: true
 maxNumRxnsEqualsGeneration: true
-
-# true keeps exactly N-step pathways per generation N; false allows <=N steps.
 filterExactNumRxns: true
 exactNumRxnsEqualsGeneration: true
 
-# Targets: CSV + column (set targetSmiles or targetSmilesList instead for single/few targets).
+# Parallel jobs. Total = number_of_pairs * number_of_generations.
+numParallelJobs: 8
+numProcess: 1
+
+# CSV input — must contain startersColumn and targetsColumn.
+# starters and maxAtoms are no longer hardcoded; both are derived from the CSV.
 targetsCsvPath: "../../../combinedEbola_allDORAnetGenerated_Antivirals_wARTprediction_top20.csv"
+startersColumn: "starter_Canonical_SMILES"
 targetsColumn: "Canonical_SMILES"
 
-# Network generation.
-starters:
-  - "C1=NC2=C(C(=O)N1)N=CN2[C@H]3[C@@H]([C@@H]([C@H](O3)CO)O)O"
+# Optional: restrict to specific 1-based row indices. null = run all rows.
+targetsToTest: null
 
-maxAtoms:
-  C: 15
-  N: 6
-  O: 8
-  S: 3
-direction: "forward"
-ruleset: "JN3604IMT"
-
-# Reaction thermodynamics via eQuilibrator's standard Gibbs free energy (dG'),
-# the approach DORAnet's own team uses for enzymatic reactions (their official
-# example notebook), and the physically appropriate metric for biochemical
-# reactions -- not enthalpy from group additivity. When false (default), no
-# calculator is built at all and nothing is rejected on thermodynamic grounds;
-# this is the safer default since a calculator that can't resolve some
-# compound still kills that whole reaction regardless of the cutoff.
-filterByThermodynamics: false
-
-# 0, not 15: keep a reaction only if it's exergonic as written (dG' < this).
-maxRxnThermoChange: 0
-
-# Path to the local eQuilibrator compound cache (built once via
-# generate_local_cache_from_default_zenodo). If missing, the script tries to
-# build it on first use -- slow, needs Zenodo access, better done yourself
-# ahead of time, especially on compute nodes with restricted internet access.
-compoundsDbPath: "compounds.sqlite"
-
-# Pathway search. minRxnAtomEconomy 0.0 for debugging; try 0.3 once pathways exist.
-minRxnAtomEconomy: 0.0
-runRanking: true
-runVisualization: false
-summaryCsv: "job_summary.csv"
-
+# maxAtoms is computed per starter as ceil(atomCount * atomMultiplier).
+# Example: starter with 6 C atoms → maxAtoms C = ceil(6 * 1.5) = 9
+#          starter with 5 C atoms → maxAtoms C = ceil(5 * 1.5) = 8
+atomMultiplier: 1.5
 
 helpers:
   - "C#N"
@@ -79,3 +54,23 @@ helpers:
   - "O=C=O"
   - "[C-]#[O+]"
   - "C=C"
+
+direction: "forward"
+ruleset: "JN3604IMT"
+
+minRxnAtomEconomy: 0.0
+sanitize: true
+removePureHelpersRxns: false
+transformEnolsFlag: false
+considerNameDifference: true
+runRanking: true
+runVisualization: false
+
+summaryCsv: "job_summary.csv"
+
+weights: null
+coolReactions: null
+reaxysResultName: null
+excludeSmiles: null
+reaxysRxnColor: "blue"
+normalRxnColor: "black"
