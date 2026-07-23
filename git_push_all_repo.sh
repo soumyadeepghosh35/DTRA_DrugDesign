@@ -63,9 +63,9 @@ processRepo() {
     local deletedCount=0
 
     echo
-    echo "============================================================"
-    echo "Repository: ${repoDir}"
-    echo "============================================================"
+    echo "------------------------------------------------------------"
+    echo " Repository: ${repoDir}"
+    echo "------------------------------------------------------------"
 
     branchName=$(
         git -C "${repoDir}" symbolic-ref --quiet --short HEAD 2>/dev/null
