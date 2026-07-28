@@ -15,12 +15,12 @@ filterExactNumRxns: true
 exactNumRxnsEqualsGeneration: true
 
 # Parallel jobs. Total = number_of_pairs * number_of_generations.
-numParallelJobs: 8
+numParallelJobs: 16
 numProcess: 1
 
 # CSV input — must contain startersColumn and targetsColumn.
 # starters and maxAtoms are no longer hardcoded; both are derived from the CSV.
-targetsCsvPath: "../../../combinedEbola_allDORAnetGenerated_Antivirals_wARTprediction_top20.csv"
+targetsCsvPath: "combinedEbola_allDORAnetGenerated_Antivirals_wARTprediction_top20.csv"
 startersColumn: "starter_Canonical_SMILES"
 targetsColumn: "Canonical_SMILES"
 

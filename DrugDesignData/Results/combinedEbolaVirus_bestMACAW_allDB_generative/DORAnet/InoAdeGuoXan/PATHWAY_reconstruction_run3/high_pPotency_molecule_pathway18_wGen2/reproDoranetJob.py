@@ -17,8 +17,8 @@ import doranet.modules.post_processing as postProcessing
 
 jobName      = "high_pPotency_molecule_pathway18_wGen2"
 starters     = {'Nc1ncnc2c1ncn2[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O'}
-helpers      = {'Br', '[Br][Br]', '[H][H]', 'O=NO', 'N#N', 'C=O', 'C#N', 'S', 'O=S=O', 'O=S(=O)(O)O', 'N', 'NO', 'N#CO', 'O', '[C-]#[O+]', 'O=[N+]([O-])O', 'O=S(O)O', 'O=O', 'C=C', 'O=C=O', 'CO'}
-target       = {'CC(O)[C@H]1O[C@@H](n2cnc3c(NC=O)ncnc32)[C@H](O)[C@@]1(C)O'}
+helpers      = {'O=O', 'O=S(O)O', 'CO', 'Br', 'O=C=O', 'S', 'C#N', '[H][H]', 'O=S=O', 'C=C', 'C=O', 'N', 'N#N', 'NO', 'O=[N+]([O-])O', '[Br][Br]', 'O=S(=O)(O)O', 'O', 'O=NO', 'N#CO', '[C-]#[O+]'}
+target       = {'O=C1Nc2ncnc3c2ncn3[C@@H]2O[C@H]1[C@@H](O)[C@H]2O'}
 maxAtoms     = {'C': 15, 'N': 8, 'O': 6, 'S': 1}
 generations  = 2
 ruleset      = "JN3604IMT"

@@ -16,10 +16,10 @@ import doranet.modules.enzymatic as enzymatic
 import doranet.modules.post_processing as postProcessing
 
 jobName      = "high_pPotency_molecule_pathway10_wGen3"
-starters     = {'Nc1nc2c(ncn2[C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]1'}
-helpers      = {'O=C=O', 'O=O', 'O=NO', 'O=S=O', 'O', 'CO', 'N', 'C=O', 'N#N', 'O=S(=O)(O)O', 'S', 'O=[N+]([O-])O', 'Br', 'O=S(O)O', 'C=C', 'C#N', 'N#CO', 'NO', '[Br][Br]', '[C-]#[O+]', '[H][H]'}
-target       = {'C[C@]1(n2cnc3c(=O)[nH]c(NC=O)nc32)O[C@H](C(=O)O)[C@@H](O)[C@H]1O'}
-maxAtoms     = {'C': 15, 'N': 8, 'O': 8, 'S': 1}
+starters     = {'Nc1ncnc2c1ncn2[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O'}
+helpers      = {'O=NO', 'C#N', '[C-]#[O+]', 'O=S(=O)(O)O', 'CO', 'O', 'O=S(O)O', 'N#CO', 'O=[N+]([O-])O', 'O=O', 'N#N', 'N', 'Br', 'O=S=O', 'S', 'C=O', 'NO', '[H][H]', 'O=C=O', '[Br][Br]', 'C=C'}
+target       = {'NC(=O)OP(=O)(O)O'}
+maxAtoms     = {'C': 15, 'N': 8, 'O': 6, 'S': 1}
 generations  = 3
 ruleset      = "JN3604IMT"
 searchDepth  = 3

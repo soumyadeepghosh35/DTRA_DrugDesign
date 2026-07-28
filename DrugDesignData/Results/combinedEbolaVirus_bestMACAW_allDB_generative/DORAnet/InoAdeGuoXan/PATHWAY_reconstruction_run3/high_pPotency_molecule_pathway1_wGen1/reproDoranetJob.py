@@ -17,8 +17,8 @@ import doranet.modules.post_processing as postProcessing
 
 jobName      = "high_pPotency_molecule_pathway1_wGen1"
 starters     = {'Nc1ncnc2c1ncn2[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O'}
-helpers      = {'[H][H]', 'N#CO', 'N', 'O=S(O)O', 'CO', 'O=C=O', 'S', 'NO', 'O=[N+]([O-])O', 'O=O', 'O=S(=O)(O)O', 'Br', 'C#N', '[Br][Br]', 'O=NO', 'C=C', '[C-]#[O+]', 'N#N', 'C=O', 'O=S=O', 'O'}
-target       = {'CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1OP(=O)(O)O'}
+helpers      = {'O=NO', 'C#N', '[C-]#[O+]', 'O=S(=O)(O)O', 'CO', 'O', 'O=S(O)O', 'N#CO', 'O=[N+]([O-])O', 'O=O', 'N#N', 'N', 'Br', 'O=S=O', 'S', 'C=O', 'NO', '[H][H]', 'O=C=O', '[Br][Br]', 'C=C'}
+target       = {'CC(=O)OP(=O)(O)OC(C)=O'}
 maxAtoms     = {'C': 15, 'N': 8, 'O': 6, 'S': 1}
 generations  = 1
 ruleset      = "JN3604IMT"
