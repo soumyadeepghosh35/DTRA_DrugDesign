@@ -1,1 +1,1 @@
-python doranet_pathways.py > doranet.out
+python doranet_pathways_multiGen.py config_doranet_multiGen.yaml > doranet.out
