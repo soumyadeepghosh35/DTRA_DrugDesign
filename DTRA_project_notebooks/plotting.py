@@ -16,9 +16,13 @@ from sklearn.metrics import auc
 from matplotlib import rc
 matplotlib.rcParams['font.family'] = 'DejaVu Sans'
 matplotlib.rcParams['font.sans-serif'] = ['DejaVu Sans']
+matplotlib.rcParams['font.size']        = 10
 matplotlib.rcParams['figure.dpi'] = 96
 matplotlib.rcParams['savefig.dpi'] = 300
 matplotlib.rc('figure', figsize=(5.0, 4.0))
+#matplotlib.rcParams['font.family']      = 'serif'
+#matplotlib.rcParams['font.serif']       = ['Times New Roman']
+#matplotlib.rcParams['mathtext.fontset'] = 'stix'
 
 
 
@@ -86,7 +90,7 @@ def parity_plot(
                 f'$R^2_{{\\mathrm{{Train}}}} = {train_r2:.2f}$\n'
                 f'$\\mathrm{{MAE}}_{{\\mathrm{{Train}}}} = {train_mae:.2f}$\n'
                 f'$\\mathrm{{RMSE}}_{{\\mathrm{{Train}}}} = {train_rmse:.2f}$',
-                transform=ax.transAxes, fontsize=9, va='top', ha='left',
+                transform=ax.transAxes, fontsize=10, va='top', ha='left',
                 color='blue')
         
         # Test metrics (bottom-right, red)
@@ -94,21 +98,21 @@ def parity_plot(
                 f'$R^2_{{\\mathrm{{Test}}}} = {test_r2:.2f}$\n'
                 f'$\\mathrm{{MAE}}_{{\\mathrm{{Test}}}} = {test_mae:.2f}$\n'
                 f'$\\mathrm{{RMSE}}_{{\\mathrm{{Test}}}} = {test_rmse:.2f}$',
-                transform=ax.transAxes, fontsize=9, va='bottom', ha='right',
+                transform=ax.transAxes, fontsize=10, va='bottom', ha='right',
                 color='red')
     else:
         r2_text = f"$R^2 = {r2_score(x, y):0.2f}$"
         rmse_text = f"RMSE = {np.sqrt(mean_squared_error(x, y)):0.2f}"
         mae_text = f"MAE = {mean_absolute_error(x, y):0.2f}"
-        plt.gca().text(0.05, 0.93, r2_text, transform=plt.gca().transAxes, fontsize=9.)
-        plt.gca().text(0.05, 0.87, mae_text, transform=plt.gca().transAxes, fontsize=9.)
-        plt.gca().text(0.05, 0.81, rmse_text, transform=plt.gca().transAxes, fontsize=9.)
+        plt.gca().text(0.05, 0.93, r2_text, transform=plt.gca().transAxes, fontsize=10.)
+        plt.gca().text(0.05, 0.87, mae_text, transform=plt.gca().transAxes, fontsize=10.)
+        plt.gca().text(0.05, 0.81, rmse_text, transform=plt.gca().transAxes, fontsize=10.)
 
     # Title and labels
     if title:
         plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    plt.xlabel(xlabel, fontsize=10.)
+    plt.ylabel(ylabel, fontsize=10.)
 
     # Save the figure in multiple formats
     if savetitle:
@@ -141,9 +145,9 @@ def plot_precision_vs_recall(precisions, recalls, precisions_test=None, recalls_
         
         plt.plot(recalls_test, precisions_test, 'r-', linewidth=2)
         text2 = f"$AUPRC_{{test}} = {auc(recalls_test, precisions_test):0.3f}$"
-        plt.gca().text(0.05, 0.13, text2, transform=plt.gca().transAxes, fontsize=9., c='red')
+        plt.gca().text(0.05, 0.13, text2, transform=plt.gca().transAxes, fontsize=10., c='red')
     
-    plt.gca().text(0.05, 0.05, text1, transform=plt.gca().transAxes, fontsize=9., c='blue')
+    plt.gca().text(0.05, 0.05, text1, transform=plt.gca().transAxes, fontsize=10., c='blue')
     
     if title:
         plt.title(title)
