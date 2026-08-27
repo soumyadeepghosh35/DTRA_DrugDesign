@@ -171,5 +171,5 @@ DrugDesignData/modelBuildingData/combinedEbolaVirusData_allDORAnetGeneratedMolec
 
 notebooks/data/mol2vec_all.csv
 DTRA_project_notebooks/compounds.sqlite
-SynThera
+SynThera/
 #/DTRA_project_notebooks/Step10_DNA_design_pipeline_wPathwayReconstruction_OneCompound.ipynb
